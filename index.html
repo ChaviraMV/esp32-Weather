@@ -24,25 +24,23 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; }
 body {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg); color: var(--text);
   font-family: 'Share Tech Mono', monospace;
-  min-height: 100vh;
-  overflow-x: hidden;
+  min-height: 100vh; overflow-x: hidden;
 }
 .bg-layer {
   position:fixed; inset:0; z-index:0; pointer-events:none;
   background:
-    radial-gradient(ellipse 80% 60% at 15%  10%, rgba(0,229,255,0.08)  0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85%  85%, rgba(168,85,247,0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 50%  50%, rgba(0,255,159,0.04)  0%, transparent 70%);
+    radial-gradient(ellipse 80% 60% at 15% 10%, rgba(0,229,255,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 85%, rgba(168,85,247,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(0,255,159,0.04) 0%, transparent 70%);
 }
 .grid-layer {
   position:fixed; inset:0; z-index:0; pointer-events:none;
   background-image:
     linear-gradient(rgba(0,229,255,0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,229,255,0.035) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-size:48px 48px;
   animation: gridMove 22s linear infinite;
 }
 @keyframes gridMove { from{background-position:0 0;} to{background-position:48px 48px;} }
@@ -56,24 +54,17 @@ body {
   position:fixed; top:-60px; left:-10%; width:120%; height:220px;
   z-index:0; pointer-events:none;
   background: linear-gradient(180deg, rgba(0,229,255,0.12) 0%, rgba(168,85,247,0.08) 40%, transparent 100%);
-  filter: blur(32px);
+  filter:blur(32px);
   animation: auroraPulse 8s ease-in-out infinite alternate;
 }
-@keyframes auroraPulse {
-  from { opacity:0.6; transform:scaleX(1); }
-  to   { opacity:1;   transform:scaleX(1.05); }
-}
+@keyframes auroraPulse { from{opacity:0.6;transform:scaleX(1);} to{opacity:1;transform:scaleX(1.05);} }
 .wrap { position:relative; z-index:1; max-width:980px; margin:0 auto; padding:24px 16px 40px; }
 
 /* HEADER */
-header {
-  text-align:center; padding:44px 0 28px;
-  border-bottom:1px solid var(--border); margin-bottom:32px;
-}
+header { text-align:center; padding:44px 0 28px; border-bottom:1px solid var(--border); margin-bottom:32px; }
 .pre-title { font-size:10px; letter-spacing:6px; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
 h1 {
-  font-family:'Orbitron',sans-serif;
-  font-size:clamp(24px,5.5vw,46px); font-weight:900;
+  font-family:'Orbitron',sans-serif; font-size:clamp(24px,5.5vw,46px); font-weight:900;
   background:linear-gradient(135deg, var(--accent) 0%, var(--purple) 50%, var(--green) 100%);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
   letter-spacing:4px; animation: hueShift 10s linear infinite;
@@ -88,16 +79,13 @@ h1 {
   border:1px solid var(--border); background:rgba(0,229,255,0.04); transition:all .3s;
 }
 .badge.online  { border-color:var(--green); color:var(--green); }
-.badge.offline { border-color:var(--hot);   color:var(--hot);   animation:blink 1.4s ease-in-out infinite; }
-.badge.loading { border-color:var(--accent);color:var(--accent);}
+.badge.offline { border-color:var(--hot);   color:var(--hot); animation:blink 1.4s ease-in-out infinite; }
+.badge.loading { border-color:var(--accent); color:var(--accent); }
 @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.4;} }
 
 /* FECHA/HORA */
 .datetime-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
-.dt-card {
-  background:var(--panel); border:1px solid var(--border); border-radius:10px;
-  padding:20px 24px; position:relative; overflow:hidden;
-}
+.dt-card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:20px 24px; position:relative; overflow:hidden; }
 .dt-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
 .dt-card.realtime::before { background:linear-gradient(90deg, var(--accent), var(--purple)); }
 .dt-card.lastupd::before  { background:linear-gradient(90deg, var(--accent2), var(--hot)); }
@@ -110,8 +98,7 @@ h1 {
 .sensor-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
 .sensor-card {
   background:var(--panel); border:1px solid var(--border); border-radius:10px;
-  padding:28px 24px; position:relative; overflow:hidden;
-  transition:transform .2s, box-shadow .2s;
+  padding:28px 24px; position:relative; overflow:hidden; transition:transform .2s, box-shadow .2s;
 }
 .sensor-card:hover { transform:translateY(-3px); box-shadow:0 8px 32px rgba(0,229,255,0.1); }
 .sensor-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
@@ -130,10 +117,7 @@ h1 {
 .s-extra { font-size:11px; color:var(--muted); margin-top:8px; }
 
 /* SECCIONES */
-.section {
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:10px; overflow:hidden; margin-bottom:24px;
-}
+.section { background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:24px; }
 .sec-header {
   padding:16px 24px; border-bottom:1px solid var(--border);
   display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
@@ -143,24 +127,27 @@ h1 {
 .chart-wrap { padding:20px 24px; }
 canvas { width:100% !important; }
 
-/* PANEL CONFIG INTERVALO */
-.config-body { padding:20px 24px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-.config-note { font-size:11px; color:var(--muted); flex:1; min-width:200px; }
-.config-note span { color:var(--accent); font-family:'Orbitron',sans-serif; font-size:15px; }
-.input-group { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.input-time {
-  background:var(--panel2); border:1px solid var(--border); border-radius:4px;
-  color:var(--text); font-family:'Share Tech Mono',monospace; font-size:13px;
-  padding:8px 10px; width:72px; text-align:center; outline:none; transition:border-color .2s;
-}
-.input-time:focus { border-color:var(--accent); }
-.input-sep { color:var(--muted); font-size:13px; }
-.input-feedback { font-size:11px; margin-top:6px; width:100%; }
-.input-feedback.ok  { color:var(--green); }
-.input-feedback.err { color:var(--hot); }
-.presets { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; width:100%; }
+/* GRÁFICAS THINGSPEAK */
+.ts-charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:20px 24px; }
+.ts-frame  { border-radius:8px; overflow:hidden; border:1px solid var(--border); background:var(--panel2); }
+.ts-frame iframe { width:100%; height:260px; border:none; display:block; }
+.ts-frame-label { font-size:10px; letter-spacing:2px; color:var(--muted); padding:8px 12px; text-align:center; border-top:1px solid var(--border); }
 
-/* TABLA */
+/* TABLA SEMANAL */
+.week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; padding:20px 24px; }
+.day-card  {
+  background:var(--panel2); border:1px solid var(--border); border-radius:8px;
+  padding:12px 8px; text-align:center; transition:border-color .2s;
+}
+.day-card.has-data { border-color:var(--accent); }
+.day-card.today    { border-color:var(--green); box-shadow:0 0 12px rgba(0,255,159,0.15); }
+.day-name  { font-family:'Orbitron',sans-serif; font-size:9px; letter-spacing:2px; color:var(--muted); margin-bottom:8px; }
+.day-temp  { font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; color:var(--accent2); }
+.day-hum   { font-family:'Orbitron',sans-serif; font-size:14px; color:var(--accent); margin-top:4px; }
+.day-count { font-size:9px; color:var(--muted); margin-top:6px; }
+.day-empty { font-size:11px; color:var(--muted); margin-top:8px; }
+
+/* TABLA HISTORIAL */
 table { width:100%; border-collapse:collapse; }
 th {
   padding:10px 16px; font-size:10px; letter-spacing:3px; color:var(--muted);
@@ -170,17 +157,20 @@ th {
 td { padding:12px 16px; font-size:13px; border-bottom:1px solid rgba(22,45,82,0.5); }
 tr:last-child td { border-bottom:none; }
 tr:hover td { background:rgba(0,229,255,0.03); }
-td.hot  { color:var(--hot); }
-td.cold { color:var(--cold); }
-td.ok   { color:var(--ok); }
+td.hot  { color:var(--hot); } td.cold { color:var(--cold); } td.ok { color:var(--ok); }
 .empty  { text-align:center; padding:36px; color:var(--muted); font-size:12px; letter-spacing:2px; }
+
+/* STATS */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:20px 24px; }
+.stat-item  { text-align:center; }
+.stat-val   { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; color:var(--accent); }
+.stat-lbl   { font-size:10px; letter-spacing:2px; color:var(--muted); margin-top:4px; }
 
 /* BOTONES */
 .btn {
   padding:8px 16px; border-radius:4px; border:1px solid var(--border);
   background:transparent; color:var(--text); font-family:'Share Tech Mono',monospace;
-  font-size:12px; cursor:pointer; letter-spacing:1px;
-  transition:all .2s; text-decoration:none; display:inline-block;
+  font-size:12px; cursor:pointer; letter-spacing:1px; transition:all .2s; text-decoration:none; display:inline-block;
 }
 .btn:hover         { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,0.08); }
 .btn.success       { border-color:var(--green);  color:var(--green); }
@@ -189,38 +179,43 @@ td.ok   { color:var(--ok); }
 .btn.refresh:hover { background:rgba(168,85,247,0.1); }
 .btn.danger        { border-color:var(--hot);    color:var(--hot); }
 .btn.danger:hover  { background:rgba(255,77,109,0.1); }
-.btn.small         { padding:5px 10px; font-size:11px; }
 
-/* ESTADÍSTICAS */
-.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:20px 24px; }
-.stat-item  { text-align:center; }
-.stat-val   { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; color:var(--accent); }
-.stat-lbl   { font-size:10px; letter-spacing:2px; color:var(--muted); margin-top:4px; }
+/* INTERVALO */
+.config-body { padding:20px 24px; display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+.input-group { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.input-time {
+  background:var(--panel2); border:1px solid var(--border); border-radius:4px;
+  color:var(--text); font-family:'Share Tech Mono',monospace; font-size:13px;
+  padding:8px 10px; width:72px; text-align:center; outline:none; transition:border-color .2s;
+}
+.input-time:focus { border-color:var(--accent); }
+.input-sep { color:var(--muted); }
+.input-feedback { font-size:11px; margin-top:8px; width:100%; }
+.input-feedback.ok  { color:var(--green); }
+.input-feedback.err { color:var(--hot); }
+.presets { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; width:100%; }
+.btn.small { padding:5px 10px; font-size:11px; }
 
 /* COLABORADORES */
-.collab       { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:28px 24px; margin-bottom:24px; text-align:center; }
+.collab { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:28px 24px; margin-bottom:24px; text-align:center; }
 .collab-title { font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:3px; color:var(--purple); margin-bottom:20px; }
 .collab-grid  { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
 .collab-card  {
   background:var(--panel2); border:1px solid var(--border); border-radius:8px;
-  padding:20px 30px; min-width:165px;
-  transition:transform .2s, border-color .2s, box-shadow .2s;
+  padding:20px 30px; min-width:165px; transition:transform .2s, border-color .2s, box-shadow .2s;
 }
-.collab-card:hover  { transform:translateY(-4px); border-color:var(--purple); box-shadow:0 8px 24px rgba(168,85,247,0.15); }
+.collab-card:hover { transform:translateY(-4px); border-color:var(--purple); box-shadow:0 8px 24px rgba(168,85,247,0.15); }
 .collab-avatar { font-size:30px; margin-bottom:10px; }
 .collab-name   { font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:2px; color:var(--text); }
 .collab-role   { font-size:10px; color:var(--muted); letter-spacing:1px; margin-top:4px; }
 
-/* FOOTER */
 footer {
   text-align:center; padding:24px 0 10px;
-  font-size:11px; color:var(--muted); letter-spacing:2px;
-  border-top:1px solid var(--border);
+  font-size:11px; color:var(--muted); letter-spacing:2px; border-top:1px solid var(--border);
 }
 footer a { color:var(--accent); text-decoration:none; }
 footer a:hover { text-decoration:underline; }
 
-/* SPINNER */
 .spinner {
   display:inline-block; width:14px; height:14px;
   border:2px solid var(--border); border-top-color:var(--accent);
@@ -228,9 +223,10 @@ footer a:hover { text-decoration:underline; }
 }
 @keyframes spin { to{transform:rotate(360deg);} }
 
-/* RESPONSIVE */
-@media(max-width:580px){
+@media(max-width:700px) {
   .sensor-grid, .datetime-grid { grid-template-columns:1fr; }
+  .ts-charts  { grid-template-columns:1fr; }
+  .week-grid  { grid-template-columns:repeat(4,1fr); }
   .stats-grid { grid-template-columns:repeat(2,1fr); }
   .collab-grid { flex-direction:column; align-items:center; }
 }
@@ -265,7 +261,7 @@ footer a:hover { text-decoration:underline; }
       <div class="dt-sub"  id="dateLabel">cargando...</div>
     </div>
     <div class="dt-card lastupd">
-      <div class="dt-label">📡 Último dato recibido</div>
+      <div class="dt-label">📡 Último registro (3h)</div>
       <div class="dt-value" id="lastUpdated">--</div>
       <div class="dt-sub"  id="feedAge">esperando datos...</div>
     </div>
@@ -275,14 +271,14 @@ footer a:hover { text-decoration:underline; }
   <div class="sensor-grid">
     <div class="sensor-card temp">
       <span class="s-icon">🌡</span>
-      <div class="s-label">Temperatura</div>
+      <div class="s-label">Temperatura actual</div>
       <div class="s-val" id="tempVal">--<span class="s-unit">°C</span></div>
       <div class="bar-wrap"><div class="bar-fill" id="tempBar" style="width:0%"></div></div>
       <div class="s-extra" id="tempStatus">—</div>
     </div>
     <div class="sensor-card hum">
       <span class="s-icon">💧</span>
-      <div class="s-label">Humedad</div>
+      <div class="s-label">Humedad actual</div>
       <div class="s-val" id="humVal">--<span class="s-unit">%</span></div>
       <div class="bar-wrap"><div class="bar-fill" id="humBar" style="width:0%"></div></div>
       <div class="s-extra" id="humStatus">—</div>
@@ -292,8 +288,8 @@ footer a:hover { text-decoration:underline; }
   <!-- ESTADÍSTICAS -->
   <div class="section">
     <div class="sec-header">
-      <div class="sec-title">📈 ESTADÍSTICAS (últimas 50 lecturas)</div>
-      <button class="btn refresh" onclick="fetchData()">↺ Actualizar ahora</button>
+      <div class="sec-title">📈 ESTADÍSTICAS SEMANALES</div>
+      <button class="btn refresh" onclick="fetchData()">↺ Actualizar</button>
     </div>
     <div class="stats-grid">
       <div class="stat-item">
@@ -315,38 +311,79 @@ footer a:hover { text-decoration:underline; }
     </div>
   </div>
 
-  <!-- GRÁFICAS -->
+  <!-- RESUMEN SEMANAL POR DÍA -->
   <div class="section">
     <div class="sec-header">
-      <div class="sec-title">📊 GRÁFICA DE TEMPERATURA</div>
-      <div class="sec-note" id="chartNote">últimas lecturas</div>
+      <div class="sec-title">📅 RESUMEN POR DÍA</div>
+      <div class="sec-note" id="weekNote">semana actual</div>
     </div>
-    <div class="chart-wrap">
-      <canvas id="chartTemp" height="100"></canvas>
+    <div class="week-grid" id="weekGrid">
+      <!-- Se genera con JS -->
     </div>
   </div>
 
+  <!-- GRÁFICAS THINGSPEAK (embebidas directamente) -->
   <div class="section">
     <div class="sec-header">
-      <div class="sec-title">💧 GRÁFICA DE HUMEDAD</div>
+      <div class="sec-title">📊 GRÁFICAS THINGSPEAK</div>
+      <div class="sec-note">actualizadas en tiempo real</div>
     </div>
-    <div class="chart-wrap">
-      <canvas id="chartHum" height="100"></canvas>
+    <div class="ts-charts">
+      <div class="ts-frame">
+        <iframe
+          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%23080f1f&color=%23ff6b35&dynamic=true&results=56&title=Temperatura&type=line&xaxis=Tiempo&yaxis=%C2%B0C"
+          allowfullscreen>
+        </iframe>
+        <div class="ts-frame-label">🌡 TEMPERATURA (°C)</div>
+      </div>
+      <div class="ts-frame">
+        <iframe
+          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%23080f1f&color=%2300e5ff&dynamic=true&results=56&title=Humedad&type=line&xaxis=Tiempo&yaxis=%25"
+          allowfullscreen>
+        </iframe>
+        <div class="ts-frame-label">💧 HUMEDAD (%)</div>
+      </div>
     </div>
   </div>
 
-  <!-- ── INTERVALO DE REGISTRO ── -->
+  <!-- TABLA HISTORIAL -->
   <div class="section">
     <div class="sec-header">
-      <div class="sec-title">⏱ INTERVALO DE REGISTRO</div>
-      <div class="sec-note" id="intervalLabel">Actual: <span id="intervalDisplay">--</span></div>
+      <div class="sec-title">🗂 HISTORIAL DE REGISTROS (cada 3h)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn danger" onclick="resetHistory()">🗑 Limpiar vista</button>
+        <button class="btn success" onclick="downloadCSV()">⬇ Descargar Excel</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fecha · Hora</th>
+          <th>Día</th>
+          <th>Registro</th>
+          <th>Temperatura</th>
+          <th>Humedad</th>
+        </tr>
+      </thead>
+      <tbody id="histBody">
+        <tr><td colspan="6" class="empty"><span class="spinner"></span> Cargando datos...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- INTERVALO DE REFRESCO -->
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-title">⏱ INTERVALO DE REFRESCO DE PÁGINA</div>
+      <div class="sec-note" id="intervalDisplay">Actual: --</div>
     </div>
     <div class="config-body">
       <div style="width:100%">
         <div class="input-group">
           <input type="number" class="input-time" id="iH" placeholder="HH" min="0" max="23" value="0">
           <span class="input-sep">h</span>
-          <input type="number" class="input-time" id="iM" placeholder="MM" min="0" max="59" value="20">
+          <input type="number" class="input-time" id="iM" placeholder="MM" min="0" max="59" value="3">
           <span class="input-sep">min</span>
           <input type="number" class="input-time" id="iS" placeholder="SS" min="0" max="59" value="0">
           <span class="input-sep">seg</span>
@@ -355,33 +392,14 @@ footer a:hover { text-decoration:underline; }
         <div class="input-feedback" id="intervalFeedback"></div>
         <div class="presets">
           <span style="font-size:11px;color:var(--muted);align-self:center;">Presets:</span>
-          <button class="btn small" onclick="setPreset(0,0,30)">30 seg</button>
-          <button class="btn small" onclick="setPreset(0,5,0)">5 min</button>
-          <button class="btn small" onclick="setPreset(0,20,0)">20 min</button>
+          <button class="btn small" onclick="setPreset(0,1,0)">1 min</button>
+          <button class="btn small" onclick="setPreset(0,3,0)">3 min</button>
+          <button class="btn small" onclick="setPreset(0,10,0)">10 min</button>
           <button class="btn small" onclick="setPreset(1,0,0)">1 hora</button>
           <button class="btn small" onclick="setPreset(3,0,0)">3 horas</button>
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- ── HISTORIAL ── -->
-  <div class="section">
-    <div class="sec-header">
-      <div class="sec-title">🗂 HISTORIAL DE REGISTROS</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn danger" onclick="resetHistory()">🗑 Limpiar historial</button>
-        <button class="btn success" onclick="downloadCSV()">⬇ Descargar Excel</button>
-      </div>
-    </div>
-    <table id="histTable">
-      <thead>
-        <tr><th>#</th><th>Fecha · Hora</th><th>Temperatura</th><th>Humedad</th></tr>
-      </thead>
-      <tbody id="histBody">
-        <tr><td colspan="4" class="empty"><span class="spinner"></span> Cargando datos...</td></tr>
-      </tbody>
-    </table>
   </div>
 
   <!-- COLABORADORES -->
@@ -407,40 +425,33 @@ footer a:hover { text-decoration:underline; }
   </div>
 
   <footer>
-    ESP32 · DATOS VÍA <a href="https://thingspeak.com" target="_blank">THINGSPEAK</a> ·
-    ALOJADO EN <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a> · V3.2
+    ESP32 · REGISTROS CADA 3H · DATOS VÍA
+    <a href="https://thingspeak.com/channels/3284038" target="_blank">THINGSPEAK</a> ·
+    <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a> · V4.0
   </footer>
 
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 //  CONFIGURACIÓN
-// ══════════════════════════════════════════════
-const TS_CHANNEL_ID = "3284038";
-const TS_READ_KEY   = "IV68XDIEZ0KAVM7N";
-const RESULTS       = 50;
-const TZ            = "America/Tijuana";
+// ══════════════════════════════════════════
+const TS_CHANNEL_ID      = "3284038";
+const TS_READ_KEY        = "IV68XDIEZ0KAVM7N";
+const RESULTS            = 56;   // 7 días × 8 registros
+const TZ                 = "America/Tijuana";
+const OFFLINE_THRESH_SEC = 10800 * 1.5; // 1.5 × 3 horas → offline si no llega en ese tiempo
+// ══════════════════════════════════════════
 
-// ── UMBRAL OFFLINE ──────────────────────────────
-// Si el ESP32 envía cada 20 segundos a ThingSpeak,
-// marcamos offline si el último dato tiene más de
-// 2× ese intervalo (40 seg de margen). Ajusta si
-// cambias la frecuencia de envío en el ESP32.
-const OFFLINE_THRESHOLD_SEC = 40;
-// ══════════════════════════════════════════════
+let allFeeds    = [];
+let hiddenIds   = new Set();
+let refreshTimer = null;
+let pageRefreshMs = 3 * 60 * 1000; // default 3 min
 
-let chartTemp     = null;
-let chartHum      = null;
-let allFeeds      = [];
-let hiddenFeeds   = new Set(); // IDs de entradas ocultas del historial
-let refreshTimer  = null;
+const DIAS_SEMANA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 
-// Intervalo de auto-refresh en ms (se guarda en localStorage-like variable)
-let pageRefreshMs = 20000;
-
-// ── ESTRELLAS ──
+/* ── ESTRELLAS ── */
 (function(){
   const c = document.getElementById('stars');
   for(let i = 0; i < 90; i++){
@@ -457,134 +468,114 @@ let pageRefreshMs = 20000;
   }
 })();
 
-// ── RELOJ ──
+/* ── RELOJ ── */
 function updateClock(){
-  const tijuana = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
-  const pad = n => String(n).padStart(2,'0');
-  document.getElementById('clock').textContent =
-    `${pad(tijuana.getHours())}:${pad(tijuana.getMinutes())}:${pad(tijuana.getSeconds())}`;
+  const t = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
+  const p = n => String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `${p(t.getHours())}:${p(t.getMinutes())}:${p(t.getSeconds())}`;
   const dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
-                 'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   document.getElementById('dateLabel').textContent =
-    `${dias[tijuana.getDay()]}, ${tijuana.getDate()} de ${meses[tijuana.getMonth()]} ${tijuana.getFullYear()}`;
+    `${dias[t.getDay()]}, ${t.getDate()} de ${meses[t.getMonth()]} ${t.getFullYear()}`;
 }
 updateClock();
 setInterval(updateClock, 1000);
 
-// ── FORMATO FECHA ──
-function formatTS(isoStr){
-  const local = new Date(new Date(isoStr).toLocaleString('en-US', { timeZone: TZ }));
-  const pad   = n => String(n).padStart(2,'0');
-  return `${pad(local.getDate())}/${pad(local.getMonth()+1)}/${local.getFullYear()} `
-       + `${pad(local.getHours())}:${pad(local.getMinutes())}`;
+/* ── UTILIDADES ── */
+function toLocal(isoStr){
+  return new Date(new Date(isoStr).toLocaleString('en-US', { timeZone: TZ }));
 }
-
+function formatDate(isoStr){
+  const d = toLocal(isoStr), p = n => String(n).padStart(2,'0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 function timeAgo(isoStr){
-  const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
-  if(diff < 60)   return `hace ${diff} seg`;
-  if(diff < 3600) return `hace ${Math.floor(diff/60)} min`;
-  return `hace ${Math.floor(diff/3600)}h ${Math.floor((diff%3600)/60)}min`;
+  const s = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+  if(s < 60)   return `hace ${s} seg`;
+  if(s < 3600) return `hace ${Math.floor(s/60)} min`;
+  return `hace ${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}min`;
 }
-
 function intervalStr(ms){
-  const s = Math.floor(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  let parts = [];
-  if(h)   parts.push(h + 'h');
-  if(m)   parts.push(m + 'min');
-  if(sec) parts.push(sec + 'seg');
-  return parts.join(' ') || '0seg';
+  const s = Math.floor(ms/1000);
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return [h&&h+'h', m&&m+'min', sec&&sec+'seg'].filter(Boolean).join(' ') || '0seg';
 }
-
-// ── GRÁFICA ──
-function buildChart(canvasId, label, data, labels, color, existing){
-  const ctx = document.getElementById(canvasId).getContext('2d');
-  const g   = ctx.createLinearGradient(0,0,0,200);
-  g.addColorStop(0, color+'44'); g.addColorStop(1, color+'00');
-  if(existing) existing.destroy();
-  return new Chart(ctx, {
-    type:'line',
-    data:{ labels, datasets:[{
-      label, data, borderColor:color, borderWidth:2,
-      pointRadius:3, pointBackgroundColor:color,
-      backgroundColor:g, fill:true, tension:0.4
-    }]},
-    options:{
-      responsive:true,
-      interaction:{ intersect:false, mode:'index' },
-      plugins:{
-        legend:{ display:false },
-        tooltip:{ backgroundColor:'#080f1f', borderColor:color, borderWidth:1,
-                  titleColor:'#b8cfe0', bodyColor:color, padding:10 }
-      },
-      scales:{
-        x:{ ticks:{ color:'#3a5570', font:{family:'Share Tech Mono',size:10}, maxTicksLimit:8 },
-            grid:{ color:'rgba(22,45,82,0.4)' }},
-        y:{ ticks:{ color:'#3a5570', font:{family:'Share Tech Mono',size:11} },
-            grid:{ color:'rgba(22,45,82,0.4)' }}
-      }
-    }
-  });
-}
-
-// ── BADGE ──
 function setBadge(cls, text){
   const b = document.getElementById('badgeSensor');
-  b.className   = 'badge ' + cls;
+  b.className = 'badge ' + cls;
   b.textContent = text;
 }
 
-// ── FETCH PRINCIPAL ──
+/* ── RESUMEN SEMANAL POR DÍA ── */
+function buildWeekGrid(feeds){
+  // Agrupar por día de la semana usando field3 (día 1-7 que manda el ESP32)
+  const byDay = {}; // { "1": [{temp, hum}], "2": [...], ... }
+  feeds.forEach(f => {
+    const d = parseInt(f.field3);
+    if(isNaN(d) || d < 1 || d > 7) return;
+    if(!byDay[d]) byDay[d] = [];
+    byDay[d].push({ temp: parseFloat(f.field1), hum: parseFloat(f.field2) });
+  });
+
+  // Día actual aproximado basado en el último field3
+  const lastDay = feeds.length ? parseInt(feeds[feeds.length-1].field3) : 0;
+
+  const grid = document.getElementById('weekGrid');
+  grid.innerHTML = '';
+  for(let d = 1; d <= 7; d++){
+    const data  = byDay[d] || [];
+    const valid = data.filter(r => !isNaN(r.temp) && !isNaN(r.hum));
+    const avgT  = valid.length ? (valid.reduce((s,r)=>s+r.temp,0)/valid.length).toFixed(1) : null;
+    const avgH  = valid.length ? (valid.reduce((s,r)=>s+r.hum, 0)/valid.length).toFixed(1) : null;
+    const isToday = d === lastDay;
+
+    const card = document.createElement('div');
+    card.className = 'day-card' + (valid.length ? ' has-data' : '') + (isToday ? ' today' : '');
+    card.innerHTML = `
+      <div class="day-name">${DIAS_SEMANA[d-1].toUpperCase()}</div>
+      ${avgT !== null
+        ? `<div class="day-temp">${avgT}°</div>
+           <div class="day-hum">${avgH}%</div>
+           <div class="day-count">${valid.length}/8 reg</div>`
+        : `<div class="day-empty">—</div>`
+      }`;
+    grid.appendChild(card);
+  }
+
+  const total = feeds.length;
+  document.getElementById('weekNote').textContent = `${total} / 56 registros`;
+}
+
+/* ── FETCH PRINCIPAL ── */
 async function fetchData(){
   const url = `https://api.thingspeak.com/channels/${TS_CHANNEL_ID}/feeds.json`
             + `?api_key=${TS_READ_KEY}&results=${RESULTS}`;
   try {
-    const res   = await fetch(url);
-    const json  = await res.json();
+    const json  = await (await fetch(url)).json();
     const feeds = json.feeds || [];
     allFeeds    = feeds;
 
     if(!feeds.length){ setBadge('offline','✖ SIN DATOS'); return; }
 
-    const last    = feeds[feeds.length - 1];
+    const last    = feeds[feeds.length-1];
     const lastT   = parseFloat(last.field1);
     const lastH   = parseFloat(last.field2);
     const isOk    = !isNaN(lastT) && !isNaN(lastH);
+    const secsAgo = (Date.now() - new Date(last.created_at)) / 1000;
+    const vivo    = isOk && secsAgo <= OFFLINE_THRESH_SEC;
 
-    // ── DETECCIÓN OFFLINE REAL ──────────────────────────────────────────
-    // Calculamos cuántos segundos pasaron desde el último dato recibido.
-    // Si ese tiempo supera OFFLINE_THRESHOLD_SEC, el ESP32 no está enviando.
-    const secsAgo = (Date.now() - new Date(last.created_at).getTime()) / 1000;
-    const vivo    = isOk && secsAgo <= OFFLINE_THRESHOLD_SEC;
+    setBadge(vivo ? 'online' : 'offline',
+      vivo ? '● SENSOR ONLINE'
+           : `✖ SENSOR OFFLINE · ${secsAgo<60?Math.floor(secsAgo)+'s':secsAgo<3600?Math.floor(secsAgo/60)+'min':Math.floor(secsAgo/3600)+'h'} sin señal`);
 
-    if(vivo){
-      setBadge('online','● SENSOR ONLINE');
-    } else {
-      // Mostramos cuánto tiempo lleva sin enviar datos
-      const agoTxt = secsAgo < 60
-        ? `${Math.floor(secsAgo)}s sin señal`
-        : secsAgo < 3600
-          ? `${Math.floor(secsAgo/60)}min sin señal`
-          : `${Math.floor(secsAgo/3600)}h sin señal`;
-      setBadge('offline', `✖ SENSOR OFFLINE · ${agoTxt}`);
-    }
-    // ────────────────────────────────────────────────────────────────────
-
-    document.getElementById('lastUpdated').textContent = formatTS(last.created_at);
+    document.getElementById('lastUpdated').textContent = formatDate(last.created_at);
     document.getElementById('feedAge').textContent     = timeAgo(last.created_at);
 
     if(isOk){
-      document.getElementById('tempVal').innerHTML =
-        lastT.toFixed(1)+'<span class="s-unit">°C</span>';
-      document.getElementById('humVal').innerHTML  =
-        lastH.toFixed(1)+'<span class="s-unit">%</span>';
-      document.getElementById('tempBar').style.width =
-        Math.min(100,Math.max(0,(lastT/50)*100))+'%';
-      document.getElementById('humBar').style.width  =
-        Math.min(100,Math.max(0,lastH))+'%';
+      document.getElementById('tempVal').innerHTML = lastT.toFixed(1)+'<span class="s-unit">°C</span>';
+      document.getElementById('humVal').innerHTML  = lastH.toFixed(1)+'<span class="s-unit">%</span>';
+      document.getElementById('tempBar').style.width = Math.min(100,Math.max(0,(lastT/50)*100))+'%';
+      document.getElementById('humBar').style.width  = Math.min(100,Math.max(0,lastH))+'%';
       document.getElementById('tempStatus').textContent =
         lastT>30?'🔴 Temperatura alta':lastT<18?'🔵 Temperatura fría':'🟢 Temperatura normal';
       document.getElementById('humStatus').textContent  =
@@ -603,138 +594,116 @@ async function fetchData(){
       document.getElementById('statHumMin').textContent = Math.min(...hums).toFixed(1)+'%';
     }
 
-    // Gráficas
-    const labels = feeds.map(f=>{
-      const l = new Date(new Date(f.created_at).toLocaleString('en-US',{timeZone:TZ}));
-      return `${String(l.getHours()).padStart(2,'0')}:${String(l.getMinutes()).padStart(2,'0')}`;
-    });
-    chartTemp = buildChart('chartTemp','Temperatura (°C)',
-      feeds.map(f=>parseFloat(f.field1)||null), labels, '#ff6b35', chartTemp);
-    chartHum  = buildChart('chartHum', 'Humedad (%)',
-      feeds.map(f=>parseFloat(f.field2)||null), labels, '#00e5ff', chartHum);
-    document.getElementById('chartNote').textContent = `${feeds.length} lecturas`;
+    // Resumen semanal por día
+    buildWeekGrid(feeds);
 
-    // Tabla historial (respeta entradas ocultas)
+    // Tabla historial
     renderHistory(feeds);
 
   } catch(err){
-    console.error('Error ThingSpeak:', err);
+    console.error(err);
     setBadge('offline','✖ ERROR DE CONEXIÓN');
     document.getElementById('histBody').innerHTML =
-      '<tr><td colspan="4" class="empty">⚠ No se pudo conectar con ThingSpeak.</td></tr>';
+      '<tr><td colspan="6" class="empty">⚠ No se pudo conectar con ThingSpeak.</td></tr>';
   }
 }
 
-// ── HISTORIAL: renderizar respetando ocultos ──
+/* ── TABLA HISTORIAL ── */
 function renderHistory(feeds){
   const tbody   = document.getElementById('histBody');
-  const visible = [...feeds].reverse().filter(f => !hiddenFeeds.has(f.entry_id));
+  const visible = [...feeds].reverse().filter(f => !hiddenIds.has(f.entry_id));
   tbody.innerHTML = '';
   if(!visible.length){
-    tbody.innerHTML = '<tr><td colspan="4" class="empty">— Historial vacío. Los datos siguen en ThingSpeak. —</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">— Historial vacío. Los datos siguen en ThingSpeak. —</td></tr>';
     return;
   }
   visible.forEach((f,i) => {
     const t   = parseFloat(f.field1);
     const h   = parseFloat(f.field2);
+    const dia = parseInt(f.field3);
+    const reg = parseInt(f.field4);
     const cls = t>30?'hot':t<18?'cold':'ok';
     const tr  = document.createElement('tr');
     tr.innerHTML = `
       <td>${i+1}</td>
-      <td>${formatTS(f.created_at)}</td>
+      <td>${formatDate(f.created_at)}</td>
+      <td>${isNaN(dia)?'—':'Día '+dia+' · '+(DIAS_SEMANA[dia-1]||'')}</td>
+      <td>${isNaN(reg)?'—':reg+'/8'}</td>
       <td class="${cls}">${isNaN(t)?'—':t.toFixed(1)+' °C'}</td>
       <td>${isNaN(h)?'—':h.toFixed(1)+' %'}</td>`;
     tbody.appendChild(tr);
   });
 }
 
-// ── LIMPIAR HISTORIAL (solo vista, no borra ThingSpeak) ──
 function resetHistory(){
-  if(!confirm('¿Limpiar el historial de la vista?\n\nNota: Los datos NO se borran de ThingSpeak, solo de esta pantalla hasta que recargues la página.')) return;
-  allFeeds.forEach(f => hiddenFeeds.add(f.entry_id));
+  if(!confirm('¿Limpiar la vista del historial?\nLos datos NO se borran de ThingSpeak.')) return;
+  allFeeds.forEach(f => hiddenIds.add(f.entry_id));
   renderHistory(allFeeds);
 }
 
-// ── INTERVALO DE REGISTRO ──
+/* ── INTERVALO ── */
 function applyInterval(){
-  const h   = parseInt(document.getElementById('iH').value) || 0;
-  const m   = parseInt(document.getElementById('iM').value) || 0;
-  const s   = parseInt(document.getElementById('iS').value) || 0;
-  const ms  = (h*3600 + m*60 + s) * 1000;
-  const fb  = document.getElementById('intervalFeedback');
-
+  const h  = parseInt(document.getElementById('iH').value)||0;
+  const m  = parseInt(document.getElementById('iM').value)||0;
+  const s  = parseInt(document.getElementById('iS').value)||0;
+  const ms = (h*3600+m*60+s)*1000;
+  const fb = document.getElementById('intervalFeedback');
   if(ms < 15000){
-    fb.textContent = '⚠ El mínimo es 15 segundos.';
-    fb.className   = 'input-feedback err';
-    return;
+    fb.textContent = '⚠ Mínimo 15 segundos.'; fb.className = 'input-feedback err'; return;
   }
-
   pageRefreshMs = ms;
-
-  // Reiniciar el auto-refresh con el nuevo intervalo
   clearInterval(refreshTimer);
   refreshTimer = setInterval(fetchData, pageRefreshMs);
-
-  document.getElementById('intervalDisplay').textContent = intervalStr(pageRefreshMs);
-  fb.textContent = `✔ Intervalo actualizado a ${intervalStr(ms)}. La página se recargará cada ese tiempo.`;
-  fb.className   = 'input-feedback ok';
-  setTimeout(() => { fb.textContent = ''; }, 4000);
+  document.getElementById('intervalDisplay').textContent = 'Actual: ' + intervalStr(ms);
+  fb.textContent = `✔ Refresco cada ${intervalStr(ms)}`; fb.className = 'input-feedback ok';
+  setTimeout(()=>{ fb.textContent=''; }, 4000);
 }
-
-function setPreset(h, m, s){
-  document.getElementById('iH').value = h;
-  document.getElementById('iM').value = m;
-  document.getElementById('iS').value = s;
+function setPreset(h,m,s){
+  document.getElementById('iH').value=h;
+  document.getElementById('iM').value=m;
+  document.getElementById('iS').value=s;
   applyInterval();
 }
 
-// ── CSV ──
+/* ── DESCARGAR CSV ── */
 function downloadCSV(){
-  const visible = allFeeds.filter(f => !hiddenFeeds.has(f.entry_id));
-  if(!visible.length){ alert('No hay datos para descargar.'); return; }
-  let csv = 'Fecha,Hora,Temperatura (°C),Humedad (%)\n';
+  const visible = allFeeds.filter(f => !hiddenIds.has(f.entry_id));
+  if(!visible.length){ alert('No hay datos.'); return; }
+  let csv = 'Fecha,Hora,Día semana,Registro del día,Temperatura (°C),Humedad (%)\n';
   visible.forEach(f => {
-    const local = new Date(new Date(f.created_at).toLocaleString('en-US',{timeZone:TZ}));
-    const pad   = n => String(n).padStart(2,'0');
-    const t = parseFloat(f.field1), h = parseFloat(f.field2);
-    csv += `"${pad(local.getDate())}/${pad(local.getMonth()+1)}/${local.getFullYear()}",`
-         + `"${pad(local.getHours())}:${pad(local.getMinutes())}",`
+    const d   = toLocal(f.created_at), p = n => String(n).padStart(2,'0');
+    const dia = parseInt(f.field3), reg = parseInt(f.field4);
+    const t   = parseFloat(f.field1), h = parseFloat(f.field2);
+    csv += `"${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}",`
+         + `"${p(d.getHours())}:${p(d.getMinutes())}",`
+         + `"${isNaN(dia)?'':DIAS_SEMANA[dia-1]||dia}",`
+         + `"${isNaN(reg)?'':reg+'/8'}",`
          + `"${isNaN(t)?'':t.toFixed(1)}","${isNaN(h)?'':h.toFixed(1)}"\n`;
   });
   const a = document.createElement('a');
   a.href  = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download = `clima_ESP32_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `clima_semanal_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
 
-// ── ARRANQUE ──
-document.getElementById('intervalDisplay').textContent = intervalStr(pageRefreshMs);
+/* ── ARRANQUE ── */
+document.getElementById('intervalDisplay').textContent = 'Actual: ' + intervalStr(pageRefreshMs);
 fetchData();
 refreshTimer = setInterval(fetchData, pageRefreshMs);
 
-// Actualiza "hace X min" cada 30s sin re-fetch
+// Actualizar badge offline y "hace X" sin fetch completo cada 30s
 setInterval(() => {
-  if(allFeeds.length)
-    document.getElementById('feedAge').textContent =
-      timeAgo(allFeeds[allFeeds.length-1].created_at);
-
-  // Re-evaluar badge offline sin necesidad de fetch completo
-  if(allFeeds.length){
-    const last    = allFeeds[allFeeds.length-1];
-    const secsAgo = (Date.now() - new Date(last.created_at).getTime()) / 1000;
-    const lastT   = parseFloat(last.field1);
-    const lastH   = parseFloat(last.field2);
-    const isOk    = !isNaN(lastT) && !isNaN(lastH);
-    const vivo    = isOk && secsAgo <= OFFLINE_THRESHOLD_SEC;
-    if(!vivo){
-      const agoTxt = secsAgo < 60
-        ? `${Math.floor(secsAgo)}s sin señal`
-        : secsAgo < 3600
-          ? `${Math.floor(secsAgo/60)}min sin señal`
-          : `${Math.floor(secsAgo/3600)}h sin señal`;
-      setBadge('offline', `✖ SENSOR OFFLINE · ${agoTxt}`);
-    }
+  if(!allFeeds.length) return;
+  const last    = allFeeds[allFeeds.length-1];
+  const secsAgo = (Date.now() - new Date(last.created_at)) / 1000;
+  const lastT   = parseFloat(last.field1);
+  const lastH   = parseFloat(last.field2);
+  const vivo    = !isNaN(lastT) && !isNaN(lastH) && secsAgo <= OFFLINE_THRESH_SEC;
+  if(!vivo){
+    const t = secsAgo<60?Math.floor(secsAgo)+'s':secsAgo<3600?Math.floor(secsAgo/60)+'min':Math.floor(secsAgo/3600)+'h';
+    setBadge('offline', `✖ SENSOR OFFLINE · ${t} sin señal`);
   }
+  document.getElementById('feedAge').textContent = timeAgo(last.created_at);
 }, 30000);
 </script>
 </body>
