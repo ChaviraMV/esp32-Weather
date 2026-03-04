@@ -54,15 +54,11 @@ body {
   animation: twinkle var(--d,3s) ease-in-out infinite var(--del,0s); opacity:0;
 }
 @keyframes twinkle { 0%,100%{opacity:0;} 50%{opacity:var(--op,0.5);} }
-
-/* ── AURORA en la parte superior ── */
 .aurora {
   position:fixed; top:-60px; left:-10%; width:120%; height:220px;
   z-index:0; pointer-events:none;
   background: linear-gradient(180deg,
-    rgba(0,229,255,0.12) 0%,
-    rgba(168,85,247,0.08) 40%,
-    transparent 100%);
+    rgba(0,229,255,0.12) 0%, rgba(168,85,247,0.08) 40%, transparent 100%);
   filter: blur(32px);
   animation: auroraPulse 8s ease-in-out infinite alternate;
 }
@@ -81,8 +77,8 @@ header {
 .pre-title { font-size:10px; letter-spacing:6px; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
 h1 {
   font-family:'Orbitron',sans-serif;
-  font-size: clamp(24px,5.5vw,46px); font-weight:900;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 50%, var(--green) 100%);
+  font-size:clamp(24px,5.5vw,46px); font-weight:900;
+  background:linear-gradient(135deg, var(--accent) 0%, var(--purple) 50%, var(--green) 100%);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
   letter-spacing:4px;
   animation: hueShift 10s linear infinite;
@@ -90,19 +86,18 @@ h1 {
 @keyframes hueShift { 0%{filter:hue-rotate(0deg);} 100%{filter:hue-rotate(360deg);} }
 .subtitle { font-size:11px; color:var(--muted); margin-top:8px; letter-spacing:3px; }
 
-/* ── STATUS BADGES ── */
+/* ── BADGES ── */
 .badges { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:28px; }
 .badge {
   padding:5px 14px; border-radius:3px; font-size:11px; letter-spacing:2px;
-  border:1px solid var(--border); background:rgba(0,229,255,0.04);
-  transition: all .3s;
+  border:1px solid var(--border); background:rgba(0,229,255,0.04); transition:all .3s;
 }
-.badge.online  { border-color:var(--green);  color:var(--green); }
-.badge.offline { border-color:var(--hot);    color:var(--hot);   animation: blink 1.4s ease-in-out infinite; }
-.badge.loading { border-color:var(--accent); color:var(--accent);}
+.badge.online  { border-color:var(--green); color:var(--green); }
+.badge.offline { border-color:var(--hot);   color:var(--hot);   animation:blink 1.4s ease-in-out infinite; }
+.badge.loading { border-color:var(--accent);color:var(--accent);}
 @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.4;} }
 
-/* ── GRID FECHA/HORA ── */
+/* ── FECHA/HORA ── */
 .datetime-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
 .dt-card {
   background:var(--panel); border:1px solid var(--border); border-radius:10px;
@@ -126,20 +121,20 @@ h1 {
 .sensor-card:hover { transform:translateY(-3px); box-shadow:0 8px 32px rgba(0,229,255,0.1); }
 .sensor-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
 .sensor-card.temp::before { background:linear-gradient(90deg, var(--accent2), var(--hot)); }
-.sensor-card.hum::before  { background:linear-gradient(90deg, var(--accent),  var(--green)); }
-.s-icon   { font-size:32px; margin-bottom:10px; display:block; }
-.s-label  { font-size:10px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
-.s-val    { font-family:'Orbitron',sans-serif; font-size:clamp(32px,7vw,56px); font-weight:700; line-height:1; }
+.sensor-card.hum::before  { background:linear-gradient(90deg, var(--accent), var(--green)); }
+.s-icon  { font-size:32px; margin-bottom:10px; display:block; }
+.s-label { font-size:10px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+.s-val   { font-family:'Orbitron',sans-serif; font-size:clamp(32px,7vw,56px); font-weight:700; line-height:1; }
 .sensor-card.temp .s-val { color:var(--accent2); text-shadow:0 0 28px rgba(255,107,53,0.45); }
 .sensor-card.hum  .s-val { color:var(--accent);  text-shadow:0 0 28px rgba(0,229,255,0.45); }
-.s-unit { font-size:18px; color:var(--muted); margin-left:4px; }
+.s-unit  { font-size:18px; color:var(--muted); margin-left:4px; }
 .bar-wrap { margin-top:14px; background:rgba(255,255,255,0.05); border-radius:2px; height:5px; }
 .bar-fill { height:5px; border-radius:2px; transition:width 1.2s ease; }
 .temp .bar-fill { background:linear-gradient(90deg, var(--accent2), var(--hot)); }
-.hum  .bar-fill { background:linear-gradient(90deg, var(--accent),  var(--green)); }
+.hum  .bar-fill { background:linear-gradient(90deg, var(--accent), var(--green)); }
 .s-extra { font-size:11px; color:var(--muted); margin-top:8px; }
 
-/* ── SECCIÓN GENÉRICA ── */
+/* ── SECCIONES ── */
 .section {
   background:var(--panel); border:1px solid var(--border);
   border-radius:10px; overflow:hidden; margin-bottom:24px;
@@ -150,16 +145,14 @@ h1 {
 }
 .sec-title { font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:2px; color:var(--accent); }
 .sec-note  { font-size:11px; color:var(--muted); }
-
-/* ── GRÁFICA SPARKLINE ── */
 .chart-wrap { padding:20px 24px; }
 canvas { width:100% !important; }
 
-/* ── TABLAS ── */
+/* ── TABLA ── */
 table { width:100%; border-collapse:collapse; }
 th {
-  padding:10px 16px; font-size:10px; letter-spacing:3px;
-  color:var(--muted); text-transform:uppercase; text-align:left;
+  padding:10px 16px; font-size:10px; letter-spacing:3px; color:var(--muted);
+  text-transform:uppercase; text-align:left;
   border-bottom:1px solid var(--border); background:rgba(0,0,0,0.3);
 }
 td { padding:12px 16px; font-size:13px; border-bottom:1px solid rgba(22,45,82,0.5); }
@@ -177,20 +170,20 @@ td.ok   { color:var(--ok); }
   font-size:12px; cursor:pointer; letter-spacing:1px;
   transition:all .2s; text-decoration:none; display:inline-block;
 }
-.btn:hover   { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,0.08); }
-.btn.success { border-color:var(--green);  color:var(--green); }
-.btn.success:hover { background:rgba(0,255,159,0.1); }
-.btn.refresh { border-color:var(--purple); color:var(--purple); }
-.btn.refresh:hover { background:rgba(168,85,247,0.1); }
+.btn:hover        { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,0.08); }
+.btn.success      { border-color:var(--green);  color:var(--green); }
+.btn.success:hover{ background:rgba(0,255,159,0.1); }
+.btn.refresh      { border-color:var(--purple); color:var(--purple); }
+.btn.refresh:hover{ background:rgba(168,85,247,0.1); }
 
-/* ── ESTADÍSTICAS RÁPIDAS ── */
+/* ── ESTADÍSTICAS ── */
 .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:20px 24px; }
-.stat-item { text-align:center; }
-.stat-val  { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; color:var(--accent); }
-.stat-lbl  { font-size:10px; letter-spacing:2px; color:var(--muted); margin-top:4px; }
+.stat-item  { text-align:center; }
+.stat-val   { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; color:var(--accent); }
+.stat-lbl   { font-size:10px; letter-spacing:2px; color:var(--muted); margin-top:4px; }
 
 /* ── COLABORADORES ── */
-.collab { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:28px 24px; margin-bottom:24px; text-align:center; }
+.collab       { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:28px 24px; margin-bottom:24px; text-align:center; }
 .collab-title { font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:3px; color:var(--purple); margin-bottom:20px; }
 .collab-grid  { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
 .collab-card  {
@@ -198,7 +191,7 @@ td.ok   { color:var(--ok); }
   padding:20px 30px; min-width:165px;
   transition:transform .2s, border-color .2s, box-shadow .2s;
 }
-.collab-card:hover { transform:translateY(-4px); border-color:var(--purple); box-shadow:0 8px 24px rgba(168,85,247,0.15); }
+.collab-card:hover  { transform:translateY(-4px); border-color:var(--purple); box-shadow:0 8px 24px rgba(168,85,247,0.15); }
 .collab-avatar { font-size:30px; margin-bottom:10px; }
 .collab-name   { font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:2px; color:var(--text); }
 .collab-role   { font-size:10px; color:var(--muted); letter-spacing:1px; margin-top:4px; }
@@ -221,7 +214,7 @@ footer a:hover { text-decoration:underline; }
 @keyframes spin { to{transform:rotate(360deg);} }
 
 /* ── RESPONSIVE ── */
-@media(max-width:580px) {
+@media(max-width:580px){
   .sensor-grid, .datetime-grid { grid-template-columns:1fr; }
   .stats-grid { grid-template-columns:repeat(2,1fr); }
   .collab-grid { flex-direction:column; align-items:center; }
@@ -244,10 +237,10 @@ footer a:hover { text-decoration:underline; }
     <div class="subtitle">MAURICIO VELA · CARLOS CAYETANO · DANIEL LOPEZ</div>
   </header>
 
-  <!-- BADGES -->
-<div class="badges">
-  <div class="badge loading" id="badgeSensor"><span class="spinner"></span>CONECTANDO...</div>
-</div>
+  <!-- BADGE: solo sensor -->
+  <div class="badges">
+    <div class="badge loading" id="badgeSensor"><span class="spinner"></span>CONECTANDO...</div>
+  </div>
 
   <!-- FECHA / HORA -->
   <div class="datetime-grid">
@@ -281,10 +274,10 @@ footer a:hover { text-decoration:underline; }
     </div>
   </div>
 
-  <!-- ESTADÍSTICAS (últimas 24 lecturas) -->
-  <div class="section" style="margin-bottom:24px;">
+  <!-- ESTADÍSTICAS -->
+  <div class="section">
     <div class="sec-header">
-      <div class="sec-title">📈 ESTADÍSTICAS (últimas 24 lecturas)</div>
+      <div class="sec-title">📈 ESTADÍSTICAS (últimas 50 lecturas)</div>
       <button class="btn refresh" onclick="fetchData()">↺ Actualizar ahora</button>
     </div>
     <div class="stats-grid">
@@ -367,23 +360,22 @@ footer a:hover { text-decoration:underline; }
 
   <footer>
     ESP32 · DATOS VÍA <a href="https://thingspeak.com" target="_blank">THINGSPEAK</a> ·
-    ALOJADO EN <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a> · V3.0
+    ALOJADO EN <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a> · V3.1
   </footer>
 
 </div><!-- /wrap -->
 
-<!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
 <script>
-// ════════════════════════════════════════════════════
-//  CONFIGURACIÓN  ← cambia solo estos dos valores
-// ════════════════════════════════════════════════════
+// ══════════════════════════════════════
+//  CONFIGURACIÓN
+// ══════════════════════════════════════
 const TS_CHANNEL_ID = "3284038";
-const TS_READ_KEY   = "IV68XDIEZ0KAVM7N"; // Tu Read API Key (pública)
-const RESULTS       = 50;   // Cuántas lecturas traer (máx 8000 en ThingSpeak)
-const REFRESH_MS    = 20000; // Auto-refresh cada 20 segundos
-// ════════════════════════════════════════════════════
+const TS_READ_KEY   = "IV68XDIEZ0KAVM7N";
+const RESULTS       = 50;
+const REFRESH_MS    = 20000;
+const TZ            = "America/Tijuana"; // Cambia aquí si cambias de región
+// ══════════════════════════════════════
 
 let chartTemp = null;
 let chartHum  = null;
@@ -406,63 +398,54 @@ let allFeeds  = [];
   }
 })();
 
-/* ── RELOJ TIEMPO REAL (México UTC-6) ── */
+/* ── RELOJ (Tijuana, automático con horario de verano) ── */
 function updateClock(){
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const mx  = new Date(utc + (-6 * 3600000)); // Ajusta el -6 a tu zona horaria
-  const pad = n => String(n).padStart(2,'0');
+  const now    = new Date();
+  const tijuana = new Date(now.toLocaleString('en-US', { timeZone: TZ }));
+  const pad    = n => String(n).padStart(2,'0');
   document.getElementById('clock').textContent =
-    `${pad(mx.getHours())}:${pad(mx.getMinutes())}:${pad(mx.getSeconds())}`;
-  const dias   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const meses  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
-                  'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    `${pad(tijuana.getHours())}:${pad(tijuana.getMinutes())}:${pad(tijuana.getSeconds())}`;
+  const dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
+                 'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   document.getElementById('dateLabel').textContent =
-    `${dias[mx.getDay()]}, ${mx.getDate()} de ${meses[mx.getMonth()]} ${mx.getFullYear()}`;
+    `${dias[tijuana.getDay()]}, ${tijuana.getDate()} de ${meses[tijuana.getMonth()]} ${tijuana.getFullYear()}`;
 }
 updateClock();
 setInterval(updateClock, 1000);
 
-/* ── FORMATEAR FECHA THINGSPEAK → LEGIBLE ── */
+/* ── FECHA THINGSPEAK → TIJUANA ── */
 function formatTS(isoStr){
-  const d = new Date(isoStr);
-  // Convertir a UTC-6
-  const utc = d.getTime() + d.getTimezoneOffset() * 60000;
-  const mx  = new Date(utc + (-6 * 3600000));
-  const pad = n => String(n).padStart(2,'0');
-  return `${pad(mx.getDate())}/${pad(mx.getMonth()+1)}/${mx.getFullYear()} `
-       + `${pad(mx.getHours())}:${pad(mx.getMinutes())}`;
+  const local = new Date(new Date(isoStr).toLocaleString('en-US', { timeZone: TZ }));
+  const pad   = n => String(n).padStart(2,'0');
+  return `${pad(local.getDate())}/${pad(local.getMonth()+1)}/${local.getFullYear()} `
+       + `${pad(local.getHours())}:${pad(local.getMinutes())}`;
 }
 
-/* ── HACE CUÁNTO (para "feedAge") ── */
+/* ── HACE CUÁNTO ── */
 function timeAgo(isoStr){
   const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
-  if(diff < 60)  return `hace ${diff} seg`;
+  if(diff < 60)   return `hace ${diff} seg`;
   if(diff < 3600) return `hace ${Math.floor(diff/60)} min`;
   return `hace ${Math.floor(diff/3600)}h ${Math.floor((diff%3600)/60)}min`;
 }
 
-/* ── CREAR / ACTUALIZAR GRÁFICA ── */
+/* ── GRÁFICA ── */
 function buildChart(canvasId, label, data, labels, color, existingChart){
   const ctx = document.getElementById(canvasId).getContext('2d');
   const gradient = ctx.createLinearGradient(0,0,0,200);
   gradient.addColorStop(0, color + '44');
   gradient.addColorStop(1, color + '00');
-
-  const cfg = {
+  if(existingChart){ existingChart.destroy(); }
+  return new Chart(ctx, {
     type:'line',
     data:{
       labels,
       datasets:[{
-        label,
-        data,
-        borderColor: color,
-        borderWidth: 2,
-        pointRadius: 3,
-        pointBackgroundColor: color,
-        backgroundColor: gradient,
-        fill: true,
-        tension: 0.4
+        label, data,
+        borderColor:color, borderWidth:2,
+        pointRadius:3, pointBackgroundColor:color,
+        backgroundColor:gradient, fill:true, tension:0.4
       }]
     },
     options:{
@@ -471,12 +454,8 @@ function buildChart(canvasId, label, data, labels, color, existingChart){
       plugins:{
         legend:{ display:false },
         tooltip:{
-          backgroundColor:'#080f1f',
-          borderColor: color,
-          borderWidth:1,
-          titleColor:'#b8cfe0',
-          bodyColor: color,
-          padding:10
+          backgroundColor:'#080f1f', borderColor:color, borderWidth:1,
+          titleColor:'#b8cfe0', bodyColor:color, padding:10
         }
       },
       scales:{
@@ -490,10 +469,7 @@ function buildChart(canvasId, label, data, labels, color, existingChart){
         }
       }
     }
-  };
-
-  if(existingChart){ existingChart.destroy(); }
-  return new Chart(ctx, cfg);
+  });
 }
 
 /* ── FETCH PRINCIPAL ── */
@@ -506,42 +482,37 @@ async function fetchData(){
     const feeds = json.feeds || [];
     allFeeds    = feeds;
 
-    if(!feeds.length){
-      setBadge('offline','✖ SIN DATOS');
-      return;
-    }
+    if(!feeds.length){ setBadge('offline','✖ SIN DATOS'); return; }
 
-    const last   = feeds[feeds.length - 1];
-    const lastT  = parseFloat(last.field1);
-    const lastH  = parseFloat(last.field2);
-    const isOk   = !isNaN(lastT) && !isNaN(lastH);
+    const last     = feeds[feeds.length - 1];
+    const lastT    = parseFloat(last.field1);
+    const lastH    = parseFloat(last.field2);
+    const isOk     = !isNaN(lastT) && !isNaN(lastH);
+    const secsAgo  = (Date.now() - new Date(last.created_at).getTime()) / 1000;
+    // Considera offline si el último dato tiene más de 2 minutos
+    const vivo     = isOk && secsAgo < 120;
 
-    /* --- Badges --- */
-    setBadge(isOk ? 'online' : 'offline', isOk ? '● SENSOR ONLINE' : '✖ SENSOR OFFLINE');
+    setBadge(vivo ? 'online' : 'offline', vivo ? '● SENSOR ONLINE' : '✖ SENSOR OFFLINE');
 
-    /* --- Fecha último dato --- */
     document.getElementById('lastUpdated').textContent = formatTS(last.created_at);
     document.getElementById('feedAge').textContent     = timeAgo(last.created_at);
 
-    /* --- Valores actuales --- */
     if(isOk){
       document.getElementById('tempVal').innerHTML =
         lastT.toFixed(1) + '<span class="s-unit">°C</span>';
       document.getElementById('humVal').innerHTML  =
         lastH.toFixed(1) + '<span class="s-unit">%</span>';
-
-      const tPct = Math.min(100, Math.max(0, (lastT / 50) * 100));
-      const hPct = Math.min(100, Math.max(0, lastH));
-      document.getElementById('tempBar').style.width = tPct + '%';
-      document.getElementById('humBar').style.width  = hPct + '%';
-
-      const tLabel = lastT > 30 ? '🔴 Temperatura alta' : lastT < 18 ? '🔵 Temperatura fría' : '🟢 Temperatura normal';
-      const hLabel = lastH > 80 ? '💦 Humedad muy alta'  : lastH < 30 ? '🏜️ Humedad muy baja' : '✅ Humedad normal';
-      document.getElementById('tempStatus').textContent = tLabel;
-      document.getElementById('humStatus').textContent  = hLabel;
+      document.getElementById('tempBar').style.width =
+        Math.min(100, Math.max(0,(lastT/50)*100)) + '%';
+      document.getElementById('humBar').style.width  =
+        Math.min(100, Math.max(0, lastH)) + '%';
+      document.getElementById('tempStatus').textContent =
+        lastT > 30 ? '🔴 Temperatura alta' : lastT < 18 ? '🔵 Temperatura fría' : '🟢 Temperatura normal';
+      document.getElementById('humStatus').textContent  =
+        lastH > 80 ? '💦 Humedad muy alta' : lastH < 30 ? '🏜️ Humedad muy baja' : '✅ Humedad normal';
     }
 
-    /* --- Estadísticas --- */
+    /* Estadísticas */
     const temps = feeds.map(f => parseFloat(f.field1)).filter(v => !isNaN(v));
     const hums  = feeds.map(f => parseFloat(f.field2)).filter(v => !isNaN(v));
     if(temps.length){
@@ -553,35 +524,30 @@ async function fetchData(){
       document.getElementById('statHumMin').textContent = Math.min(...hums).toFixed(1) + '%';
     }
 
-    /* --- Gráficas --- */
+    /* Gráficas */
     const labels = feeds.map(f => {
-      const d = new Date(f.created_at);
-      const utc = d.getTime() + d.getTimezoneOffset()*60000;
-      const mx  = new Date(utc + (-6*3600000));
-      return `${String(mx.getHours()).padStart(2,'0')}:${String(mx.getMinutes()).padStart(2,'0')}`;
+      const local = new Date(new Date(f.created_at).toLocaleString('en-US', { timeZone: TZ }));
+      return `${String(local.getHours()).padStart(2,'0')}:${String(local.getMinutes()).padStart(2,'0')}`;
     });
-    const tData = feeds.map(f => parseFloat(f.field1) || null);
-    const hData = feeds.map(f => parseFloat(f.field2) || null);
-
+    chartTemp = buildChart('chartTemp','Temperatura (°C)',
+      feeds.map(f => parseFloat(f.field1) || null), labels, '#ff6b35', chartTemp);
+    chartHum  = buildChart('chartHum', 'Humedad (%)',
+      feeds.map(f => parseFloat(f.field2) || null), labels, '#00e5ff', chartHum);
     document.getElementById('chartNote').textContent = `${feeds.length} lecturas`;
 
-    chartTemp = buildChart('chartTemp','Temperatura (°C)', tData, labels, '#ff6b35', chartTemp);
-    chartHum  = buildChart('chartHum', 'Humedad (%)',       hData, labels, '#00e5ff', chartHum);
-
-    /* --- Tabla historial --- */
+    /* Tabla */
     const tbody = document.getElementById('histBody');
     tbody.innerHTML = '';
-    const reversed = [...feeds].reverse();
-    reversed.forEach((f, i) => {
-      const t    = parseFloat(f.field1);
-      const h    = parseFloat(f.field2);
-      const tCls = t > 30 ? 'hot' : t < 18 ? 'cold' : 'ok';
-      const tr   = document.createElement('tr');
+    [...feeds].reverse().forEach((f, i) => {
+      const t   = parseFloat(f.field1);
+      const h   = parseFloat(f.field2);
+      const cls = t > 30 ? 'hot' : t < 18 ? 'cold' : 'ok';
+      const tr  = document.createElement('tr');
       tr.innerHTML = `
-        <td>${i + 1}</td>
+        <td>${i+1}</td>
         <td>${formatTS(f.created_at)}</td>
-        <td class="${tCls}">${isNaN(t) ? '—' : t.toFixed(1) + ' °C'}</td>
-        <td>${isNaN(h) ? '—' : h.toFixed(1) + ' %'}</td>`;
+        <td class="${cls}">${isNaN(t)?'—':t.toFixed(1)+' °C'}</td>
+        <td>${isNaN(h)?'—':h.toFixed(1)+' %'}</td>`;
       tbody.appendChild(tr);
     });
 
@@ -594,44 +560,38 @@ async function fetchData(){
 }
 
 function setBadge(cls, text){
-  const b = document.getElementById('badgeSensor');
-  b.className = 'badge ' + cls;
+  const b = document.createElement ? document.getElementById('badgeSensor') : null;
+  if(!b) return;
+  b.className   = 'badge ' + cls;
   b.textContent = text;
 }
 
-/* ── DESCARGAR CSV (compatible Excel) ── */
+/* ── DESCARGAR CSV ── */
 function downloadCSV(){
   if(!allFeeds.length){ alert('No hay datos para descargar.'); return; }
   let csv = 'Fecha,Hora,Temperatura (°C),Humedad (%)\n';
   allFeeds.forEach(f => {
-    const d   = new Date(f.created_at);
-    const utc = d.getTime() + d.getTimezoneOffset()*60000;
-    const mx  = new Date(utc + (-6*3600000));
-    const pad = n => String(n).padStart(2,'0');
-    const fecha = `${pad(mx.getDate())}/${pad(mx.getMonth()+1)}/${mx.getFullYear()}`;
-    const hora  = `${pad(mx.getHours())}:${pad(mx.getMinutes())}`;
-    const t = parseFloat(f.field1);
-    const h = parseFloat(f.field2);
-    csv += `"${fecha}","${hora}","${isNaN(t)?'':t.toFixed(1)}","${isNaN(h)?'':h.toFixed(1)}"\n`;
+    const local = new Date(new Date(f.created_at).toLocaleString('en-US', { timeZone: TZ }));
+    const pad   = n => String(n).padStart(2,'0');
+    csv += `"${pad(local.getDate())}/${pad(local.getMonth()+1)}/${local.getFullYear()}",`
+         + `"${pad(local.getHours())}:${pad(local.getMinutes())}",`
+         + `"${isNaN(parseFloat(f.field1))?'':parseFloat(f.field1).toFixed(1)}",`
+         + `"${isNaN(parseFloat(f.field2))?'':parseFloat(f.field2).toFixed(1)}"\n`;
   });
-  const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   const a    = document.createElement('a');
   a.href     = URL.createObjectURL(blob);
   a.download = `clima_ESP32_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
 
-/* ── ARRANQUE Y AUTO-REFRESH ── */
+/* ── ARRANQUE ── */
 fetchData();
 setInterval(fetchData, REFRESH_MS);
-
-// Actualizar "hace X min" cada 30s sin re-fetch
 setInterval(() => {
-  const lu = document.getElementById('lastUpdated').textContent;
-  if(allFeeds.length){
-    const last = allFeeds[allFeeds.length-1];
-    document.getElementById('feedAge').textContent = timeAgo(last.created_at);
-  }
+  if(allFeeds.length)
+    document.getElementById('feedAge').textContent =
+      timeAgo(allFeeds[allFeeds.length-1].created_at);
 }, 30000);
 </script>
 </body>
