@@ -2,171 +2,229 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ESP32 · Clima Monitor</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-:root{
-  --bg:#03060f;--panel:#080f1f;--panel2:#0d1830;
-  --border:#162d52;--accent:#00e5ff;--accent2:#ff6b35;
-  --green:#00ff9f;--text:#b8cfe0;--muted:#3a5570;
-  --hot:#ff4d6d;--cold:#4db8ff;--ok:#00ff9f;
-  --purple:#a855f7;
+:root {
+  --bg:      #03060f;
+  --panel:   #080f1f;
+  --panel2:  #0d1830;
+  --border:  #162d52;
+  --accent:  #00e5ff;
+  --accent2: #ff6b35;
+  --green:   #00ff9f;
+  --text:    #b8cfe0;
+  --muted:   #3a5570;
+  --hot:     #ff4d6d;
+  --cold:    #4db8ff;
+  --ok:      #00ff9f;
+  --purple:  #a855f7;
 }
-*{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
-body{
-  background:var(--bg);color:var(--text);
-  font-family:'Share Tech Mono',monospace;
-  min-height:100vh;overflow-x:hidden;
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
-.bg-layer{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
+
+/* ── FONDO ── */
+.bg-layer {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
   background:
-    radial-gradient(ellipse 80% 60% at 20% 10%,rgba(0,229,255,0.07) 0%,transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 80%,rgba(168,85,247,0.07) 0%,transparent 60%),
-    radial-gradient(ellipse 40% 40% at 50% 50%,rgba(0,255,159,0.04) 0%,transparent 70%);
+    radial-gradient(ellipse 80% 60% at 15%  10%, rgba(0,229,255,0.08)  0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85%  85%, rgba(168,85,247,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50%  50%, rgba(0,255,159,0.04)  0%, transparent 70%);
 }
-.grid-layer{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
+.grid-layer {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
   background-image:
-    linear-gradient(rgba(0,229,255,0.04) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(0,229,255,0.04) 1px,transparent 1px);
-  background-size:48px 48px;
-  animation:gridMove 20s linear infinite;
+    linear-gradient(rgba(0,229,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: gridMove 22s linear infinite;
 }
-@keyframes gridMove{from{background-position:0 0;}to{background-position:48px 48px;}}
-.stars{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
-.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d,3s) ease-in-out infinite var(--del,0s);opacity:0;}
-@keyframes twinkle{0%,100%{opacity:0;}50%{opacity:var(--op,0.6);}}
+@keyframes gridMove { from{background-position:0 0;} to{background-position:48px 48px;} }
+.stars { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.star {
+  position:absolute; background:#fff; border-radius:50%;
+  animation: twinkle var(--d,3s) ease-in-out infinite var(--del,0s); opacity:0;
+}
+@keyframes twinkle { 0%,100%{opacity:0;} 50%{opacity:var(--op,0.5);} }
 
-.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:24px 16px;}
+/* ── AURORA en la parte superior ── */
+.aurora {
+  position:fixed; top:-60px; left:-10%; width:120%; height:220px;
+  z-index:0; pointer-events:none;
+  background: linear-gradient(180deg,
+    rgba(0,229,255,0.12) 0%,
+    rgba(168,85,247,0.08) 40%,
+    transparent 100%);
+  filter: blur(32px);
+  animation: auroraPulse 8s ease-in-out infinite alternate;
+}
+@keyframes auroraPulse {
+  from { opacity:0.6; transform:scaleX(1); }
+  to   { opacity:1;   transform:scaleX(1.05); }
+}
 
-/* HEADER */
-header{text-align:center;padding:40px 0 28px;border-bottom:1px solid var(--border);margin-bottom:32px;}
-.pre-title{font-size:10px;letter-spacing:6px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
-h1{
+.wrap { position:relative; z-index:1; max-width:980px; margin:0 auto; padding:24px 16px 40px; }
+
+/* ── HEADER ── */
+header {
+  text-align:center; padding:44px 0 28px;
+  border-bottom:1px solid var(--border); margin-bottom:32px;
+}
+.pre-title { font-size:10px; letter-spacing:6px; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
+h1 {
   font-family:'Orbitron',sans-serif;
-  font-size:clamp(22px,5vw,42px);font-weight:900;
-  background:linear-gradient(135deg,var(--accent),var(--purple),var(--green));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  letter-spacing:4px;animation:hueShift 8s linear infinite;
+  font-size: clamp(24px,5.5vw,46px); font-weight:900;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 50%, var(--green) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  letter-spacing:4px;
+  animation: hueShift 10s linear infinite;
 }
-@keyframes hueShift{0%{filter:hue-rotate(0deg);}100%{filter:hue-rotate(360deg);}}
-.sub{font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:3px;}
+@keyframes hueShift { 0%{filter:hue-rotate(0deg);} 100%{filter:hue-rotate(360deg);} }
+.subtitle { font-size:11px; color:var(--muted); margin-top:8px; letter-spacing:3px; }
 
-/* BADGES */
-.badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;}
-.badge{padding:5px 14px;border-radius:3px;font-size:11px;letter-spacing:2px;border:1px solid var(--border);background:rgba(0,229,255,0.04);}
-.badge.online{border-color:var(--green);color:var(--green);}
-.badge.offline{border-color:var(--hot);color:var(--hot);}
-.badge.loading{border-color:var(--accent);color:var(--accent);animation:pulse 1.5s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
-
-/* DATETIME */
-.datetime-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
-.dt-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px 24px;position:relative;overflow:hidden;}
-.dt-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
-.dt-card.realtime::before{background:linear-gradient(90deg,var(--accent),var(--purple));}
-.dt-card.lastlog::before{background:linear-gradient(90deg,var(--accent2),var(--hot));}
-.dt-label{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
-.dt-value{font-family:'Orbitron',sans-serif;font-size:clamp(14px,3vw,20px);font-weight:700;color:var(--accent);letter-spacing:2px;}
-.dt-card.lastlog .dt-value{color:var(--accent2);}
-.dt-sub{font-size:11px;color:var(--muted);margin-top:4px;}
-
-/* SENSOR CARDS */
-.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
-.sensor-card{
-  background:var(--panel);border:1px solid var(--border);border-radius:10px;
-  padding:28px 24px;position:relative;overflow:hidden;
-  transition:transform .2s,box-shadow .2s;
+/* ── STATUS BADGES ── */
+.badges { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:28px; }
+.badge {
+  padding:5px 14px; border-radius:3px; font-size:11px; letter-spacing:2px;
+  border:1px solid var(--border); background:rgba(0,229,255,0.04);
+  transition: all .3s;
 }
-.sensor-card:hover{transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,229,255,0.1);}
-.sensor-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
-.sensor-card.temp::before{background:linear-gradient(90deg,var(--accent2),var(--hot));}
-.sensor-card.hum::before{background:linear-gradient(90deg,var(--accent),var(--green));}
-.s-icon{font-size:30px;margin-bottom:10px;display:block;}
-.s-label{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
-.s-val{font-family:'Orbitron',sans-serif;font-size:clamp(30px,7vw,52px);font-weight:700;line-height:1;}
-.sensor-card.temp .s-val{color:var(--accent2);text-shadow:0 0 24px rgba(255,107,53,0.4);}
-.sensor-card.hum .s-val{color:var(--accent);text-shadow:0 0 24px rgba(0,229,255,0.4);}
-.s-unit{font-size:16px;color:var(--muted);margin-left:4px;}
-.bar-wrap{margin-top:14px;background:rgba(255,255,255,0.05);border-radius:2px;height:4px;}
-.bar-fill{height:4px;border-radius:2px;transition:width 1s ease;}
-.temp .bar-fill{background:linear-gradient(90deg,var(--accent2),var(--hot));}
-.hum .bar-fill{background:linear-gradient(90deg,var(--accent),var(--green));}
-.s-trend{font-size:11px;color:var(--muted);margin-top:8px;}
+.badge.online  { border-color:var(--green);  color:var(--green); }
+.badge.offline { border-color:var(--hot);    color:var(--hot);   animation: blink 1.4s ease-in-out infinite; }
+.badge.loading { border-color:var(--accent); color:var(--accent);}
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.4;} }
 
-/* CHART */
-.chart-section{
-  background:var(--panel);border:1px solid var(--border);border-radius:10px;
-  padding:24px;margin-bottom:24px;
+/* ── GRID FECHA/HORA ── */
+.datetime-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+.dt-card {
+  background:var(--panel); border:1px solid var(--border); border-radius:10px;
+  padding:20px 24px; position:relative; overflow:hidden;
 }
-.chart-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px;}
-.chart-title{font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:2px;color:var(--accent);}
-.chart-tabs{display:flex;gap:8px;}
-.tab-btn{
-  padding:6px 14px;border-radius:4px;border:1px solid var(--border);
-  background:transparent;color:var(--muted);font-family:'Share Tech Mono',monospace;
-  font-size:11px;cursor:pointer;letter-spacing:1px;transition:all .2s;
+.dt-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+.dt-card.realtime::before { background:linear-gradient(90deg, var(--accent), var(--purple)); }
+.dt-card.lastupd::before  { background:linear-gradient(90deg, var(--accent2), var(--hot)); }
+.dt-label { font-size:10px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+.dt-value { font-family:'Orbitron',sans-serif; font-size:clamp(15px,3vw,22px); font-weight:700; color:var(--accent); letter-spacing:2px; }
+.dt-card.lastupd .dt-value { color:var(--accent2); font-size:clamp(12px,2vw,16px); }
+.dt-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* ── SENSORES ── */
+.sensor-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+.sensor-card {
+  background:var(--panel); border:1px solid var(--border); border-radius:10px;
+  padding:28px 24px; position:relative; overflow:hidden;
+  transition:transform .2s, box-shadow .2s;
 }
-.tab-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
-.tab-btn:hover:not(.active){border-color:var(--border);color:var(--text);}
-.chart-wrap{position:relative;height:260px;}
+.sensor-card:hover { transform:translateY(-3px); box-shadow:0 8px 32px rgba(0,229,255,0.1); }
+.sensor-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+.sensor-card.temp::before { background:linear-gradient(90deg, var(--accent2), var(--hot)); }
+.sensor-card.hum::before  { background:linear-gradient(90deg, var(--accent),  var(--green)); }
+.s-icon   { font-size:32px; margin-bottom:10px; display:block; }
+.s-label  { font-size:10px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+.s-val    { font-family:'Orbitron',sans-serif; font-size:clamp(32px,7vw,56px); font-weight:700; line-height:1; }
+.sensor-card.temp .s-val { color:var(--accent2); text-shadow:0 0 28px rgba(255,107,53,0.45); }
+.sensor-card.hum  .s-val { color:var(--accent);  text-shadow:0 0 28px rgba(0,229,255,0.45); }
+.s-unit { font-size:18px; color:var(--muted); margin-left:4px; }
+.bar-wrap { margin-top:14px; background:rgba(255,255,255,0.05); border-radius:2px; height:5px; }
+.bar-fill { height:5px; border-radius:2px; transition:width 1.2s ease; }
+.temp .bar-fill { background:linear-gradient(90deg, var(--accent2), var(--hot)); }
+.hum  .bar-fill { background:linear-gradient(90deg, var(--accent),  var(--green)); }
+.s-extra { font-size:11px; color:var(--muted); margin-top:8px; }
 
-/* TABLES */
-.section{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px;}
-.sec-header{
-  padding:16px 24px;border-bottom:1px solid var(--border);
-  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+/* ── SECCIÓN GENÉRICA ── */
+.section {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; overflow:hidden; margin-bottom:24px;
 }
-.sec-title{font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:2px;color:var(--accent);}
-table{width:100%;border-collapse:collapse;}
-th{padding:10px 16px;font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.3);}
-td{padding:12px 16px;font-size:13px;border-bottom:1px solid rgba(22,45,82,0.5);}
-tr:last-child td{border-bottom:none;}
-tr:hover td{background:rgba(0,229,255,0.03);}
-td.hot{color:var(--hot);}td.cold{color:var(--cold);}td.ok{color:var(--ok);}
-.empty{text-align:center;padding:36px;color:var(--muted);font-size:12px;letter-spacing:2px;}
-
-.btn{
-  padding:8px 16px;border-radius:4px;border:1px solid var(--border);
-  background:transparent;color:var(--text);font-family:'Share Tech Mono',monospace;
-  font-size:12px;cursor:pointer;letter-spacing:1px;transition:all .2s;text-decoration:none;display:inline-block;
+.sec-header {
+  padding:16px 24px; border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
 }
-.btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
-.btn.success{border-color:var(--green);color:var(--green);}
-.btn.success:hover{background:rgba(0,255,159,0.1);}
+.sec-title { font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:2px; color:var(--accent); }
+.sec-note  { font-size:11px; color:var(--muted); }
 
-/* COLLAB */
-.collab{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:28px 24px;margin-bottom:24px;text-align:center;}
-.collab-title{font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;color:var(--purple);margin-bottom:20px;}
-.collab-grid{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
-.collab-card{
-  background:var(--panel2);border:1px solid var(--border);border-radius:8px;
-  padding:18px 28px;min-width:160px;transition:transform .2s,border-color .2s;
+/* ── GRÁFICA SPARKLINE ── */
+.chart-wrap { padding:20px 24px; }
+canvas { width:100% !important; }
+
+/* ── TABLAS ── */
+table { width:100%; border-collapse:collapse; }
+th {
+  padding:10px 16px; font-size:10px; letter-spacing:3px;
+  color:var(--muted); text-transform:uppercase; text-align:left;
+  border-bottom:1px solid var(--border); background:rgba(0,0,0,0.3);
 }
-.collab-card:hover{transform:translateY(-3px);border-color:var(--purple);}
-.collab-avatar{font-size:28px;margin-bottom:8px;}
-.collab-name{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;color:var(--text);}
-.collab-role{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:4px;}
+td { padding:12px 16px; font-size:13px; border-bottom:1px solid rgba(22,45,82,0.5); }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(0,229,255,0.03); }
+td.hot  { color:var(--hot); }
+td.cold { color:var(--cold); }
+td.ok   { color:var(--ok); }
+.empty  { text-align:center; padding:36px; color:var(--muted); font-size:12px; letter-spacing:2px; }
 
-/* STATUS BAR */
-.status-bar{
-  background:var(--panel2);border:1px solid var(--border);border-radius:6px;
-  padding:10px 16px;margin-bottom:20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
-  font-size:11px;color:var(--muted);
+/* ── BOTONES ── */
+.btn {
+  padding:8px 16px; border-radius:4px; border:1px solid var(--border);
+  background:transparent; color:var(--text); font-family:'Share Tech Mono',monospace;
+  font-size:12px; cursor:pointer; letter-spacing:1px;
+  transition:all .2s; text-decoration:none; display:inline-block;
 }
-.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 1.5s infinite;}
-.status-dot.err{background:var(--hot);}
+.btn:hover   { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,0.08); }
+.btn.success { border-color:var(--green);  color:var(--green); }
+.btn.success:hover { background:rgba(0,255,159,0.1); }
+.btn.refresh { border-color:var(--purple); color:var(--purple); }
+.btn.refresh:hover { background:rgba(168,85,247,0.1); }
 
-footer{text-align:center;padding:24px 0 10px;font-size:11px;color:var(--muted);letter-spacing:2px;border-top:1px solid var(--border);}
+/* ── ESTADÍSTICAS RÁPIDAS ── */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:20px 24px; }
+.stat-item { text-align:center; }
+.stat-val  { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; color:var(--accent); }
+.stat-lbl  { font-size:10px; letter-spacing:2px; color:var(--muted); margin-top:4px; }
 
-@media(max-width:520px){
-  .sensor-grid,.datetime-grid{grid-template-columns:1fr;}
-  .collab-grid{flex-direction:column;align-items:center;}
-  .chart-tabs{flex-wrap:wrap;}
+/* ── COLABORADORES ── */
+.collab { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:28px 24px; margin-bottom:24px; text-align:center; }
+.collab-title { font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:3px; color:var(--purple); margin-bottom:20px; }
+.collab-grid  { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+.collab-card  {
+  background:var(--panel2); border:1px solid var(--border); border-radius:8px;
+  padding:20px 30px; min-width:165px;
+  transition:transform .2s, border-color .2s, box-shadow .2s;
+}
+.collab-card:hover { transform:translateY(-4px); border-color:var(--purple); box-shadow:0 8px 24px rgba(168,85,247,0.15); }
+.collab-avatar { font-size:30px; margin-bottom:10px; }
+.collab-name   { font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:2px; color:var(--text); }
+.collab-role   { font-size:10px; color:var(--muted); letter-spacing:1px; margin-top:4px; }
+
+/* ── FOOTER ── */
+footer {
+  text-align:center; padding:24px 0 10px;
+  font-size:11px; color:var(--muted); letter-spacing:2px;
+  border-top:1px solid var(--border);
+}
+footer a { color:var(--accent); text-decoration:none; }
+footer a:hover { text-decoration:underline; }
+
+/* ── SPINNER ── */
+.spinner {
+  display:inline-block; width:14px; height:14px;
+  border:2px solid var(--border); border-top-color:var(--accent);
+  border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px;
+}
+@keyframes spin { to{transform:rotate(360deg);} }
+
+/* ── RESPONSIVE ── */
+@media(max-width:580px) {
+  .sensor-grid, .datetime-grid { grid-template-columns:1fr; }
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .collab-grid { flex-direction:column; align-items:center; }
 }
 </style>
 </head>
@@ -174,444 +232,410 @@ footer{text-align:center;padding:24px 0 10px;font-size:11px;color:var(--muted);l
 
 <div class="bg-layer"></div>
 <div class="grid-layer"></div>
+<div class="aurora"></div>
 <div class="stars" id="stars"></div>
 
 <div class="wrap">
 
-<!-- HEADER -->
-<header>
-  <div class="pre-title">ESTACIÓN METEOROLÓGICA · ESP32</div>
-  <h1>CLIMA MONITOR</h1>
-  <div class="sub">SISTEMA DE MONITOREO EN TIEMPO REAL · VERSIÓN 3.0</div>
-</header>
+  <!-- HEADER -->
+  <header>
+    <div class="pre-title">ESTACIÓN METEOROLÓGICA · ESP32</div>
+    <h1>CLIMA MONITOR</h1>
+    <div class="subtitle">MAURICIO VELA · CARLOS CAYETANO · DANIEL LOPEZ</div>
+  </header>
 
-<!-- BADGES -->
-<div class="badges">
-  <div class="badge loading" id="sensorBadge">◌ CONECTANDO...</div>
-  <div class="badge online">● THINGSPEAK SYNC</div>
-  <div class="badge online">● PÚBLICO · CANAL 3284038</div>
-  <div class="badge" id="refreshBadge">AUTO-REFRESH: 20s</div>
-</div>
-
-<!-- STATUS BAR -->
-<div class="status-bar">
-  <span><span class="status-dot" id="statusDot"></span>Estado del sistema</span>
-  <span id="statusMsg">Cargando datos desde ThingSpeak...</span>
-  <span style="margin-left:auto;color:var(--accent)">Última actualización: <span id="lastUpdate">—</span></span>
-</div>
-
-<!-- FECHA Y HORA -->
-<div class="datetime-grid">
-  <div class="dt-card realtime">
-    <div class="dt-label">🕐 Fecha y Hora Actual</div>
-    <div class="dt-value" id="clock">--:--:--</div>
-    <div class="dt-sub" id="dateLabel">cargando...</div>
+  <!-- BADGES -->
+  <div class="badges">
+    <div class="badge loading" id="badgeSensor"><span class="spinner"></span>CONECTANDO...</div>
+    <div class="badge online">● THINGSPEAK API</div>
+    <div class="badge online">● GITHUB PAGES</div>
+    <div class="badge" id="badgeRefresh">AUTO-REFRESH: 20s</div>
   </div>
-  <div class="dt-card lastlog">
-    <div class="dt-label">📋 Último Dato de ThingSpeak</div>
-    <div class="dt-value" id="lastlogTime">—</div>
-    <div class="dt-sub" id="entryCount">Esperando datos...</div>
-  </div>
-</div>
 
-<!-- SENSOR CARDS -->
-<div class="sensor-grid">
-  <div class="sensor-card temp">
-    <span class="s-icon">🌡</span>
-    <div class="s-label">Temperatura</div>
-    <div class="s-val" id="tempVal">--<span class="s-unit">°C</span></div>
-    <div class="bar-wrap"><div class="bar-fill" id="tempBar" style="width:0%"></div></div>
-    <div class="s-trend" id="tempTrend">— cargando tendencia...</div>
-  </div>
-  <div class="sensor-card hum">
-    <span class="s-icon">💧</span>
-    <div class="s-label">Humedad</div>
-    <div class="s-val" id="humVal">--<span class="s-unit">%</span></div>
-    <div class="bar-wrap"><div class="bar-fill" id="humBar" style="width:0%"></div></div>
-    <div class="s-trend" id="humTrend">— cargando tendencia...</div>
-  </div>
-</div>
-
-<!-- GRÁFICA -->
-<div class="chart-section">
-  <div class="chart-header">
-    <div class="chart-title">📈 HISTÓRICO — ÚLTIMAS 24H</div>
-    <div class="chart-tabs">
-      <button class="tab-btn active" onclick="switchChart('temp',this)">Temperatura</button>
-      <button class="tab-btn" onclick="switchChart('hum',this)">Humedad</button>
-      <button class="tab-btn" onclick="switchChart('both',this)">Ambas</button>
+  <!-- FECHA / HORA -->
+  <div class="datetime-grid">
+    <div class="dt-card realtime">
+      <div class="dt-label">🕐 Fecha y Hora Actual</div>
+      <div class="dt-value" id="clock">--:--:--</div>
+      <div class="dt-sub"  id="dateLabel">cargando...</div>
+    </div>
+    <div class="dt-card lastupd">
+      <div class="dt-label">📡 Último dato recibido</div>
+      <div class="dt-value" id="lastUpdated">--</div>
+      <div class="dt-sub"  id="feedAge">esperando datos...</div>
     </div>
   </div>
-  <div class="chart-wrap">
-    <canvas id="mainChart"></canvas>
-  </div>
-</div>
 
-<!-- TABLA HISTORIAL -->
-<div class="section">
-  <div class="sec-header">
-    <div class="sec-title">📊 HISTORIAL DE REGISTROS</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <span id="recordCountLabel" style="font-size:11px;color:var(--muted)">— registros</span>
-      <button class="btn success" onclick="downloadCSV()">⬇ Descargar CSV</button>
+  <!-- SENSORES -->
+  <div class="sensor-grid">
+    <div class="sensor-card temp">
+      <span class="s-icon">🌡</span>
+      <div class="s-label">Temperatura</div>
+      <div class="s-val" id="tempVal">--<span class="s-unit">°C</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="tempBar" style="width:0%"></div></div>
+      <div class="s-extra" id="tempStatus">—</div>
+    </div>
+    <div class="sensor-card hum">
+      <span class="s-icon">💧</span>
+      <div class="s-label">Humedad</div>
+      <div class="s-val" id="humVal">--<span class="s-unit">%</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="humBar" style="width:0%"></div></div>
+      <div class="s-extra" id="humStatus">—</div>
     </div>
   </div>
-  <table>
-    <thead><tr><th>#</th><th>Fecha · Hora</th><th>Temperatura</th><th>Humedad</th></tr></thead>
-    <tbody id="historyBody">
-      <tr><td colspan="4" class="empty">◌ CARGANDO DATOS DESDE THINGSPEAK...</td></tr>
-    </tbody>
-  </table>
-</div>
 
-<!-- RESUMEN SEMANAL -->
-<div class="section">
-  <div class="sec-header">
-    <div class="sec-title">📅 RESUMEN SEMANAL (Últimos 7 días)</div>
-  </div>
-  <table id="weekTable">
-    <thead><tr><th>Día</th><th>Temp. Promedio</th><th>Temp. Máx</th><th>Temp. Mín</th><th>Humedad Promedio</th></tr></thead>
-    <tbody id="weekBody">
-      <tr><td colspan="5" class="empty">◌ CALCULANDO RESUMEN...</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- COLABORADORES -->
-<div class="collab">
-  <div class="collab-title">👥 EQUIPO DEL PROYECTO</div>
-  <div class="collab-grid">
-    <div class="collab-card">
-      <div class="collab-avatar">🧑‍💻</div>
-      <div class="collab-name">MAURICIO VELA</div>
-      <div class="collab-role">Desarrollador</div>
+  <!-- ESTADÍSTICAS (últimas 24 lecturas) -->
+  <div class="section" style="margin-bottom:24px;">
+    <div class="sec-header">
+      <div class="sec-title">📈 ESTADÍSTICAS (últimas 24 lecturas)</div>
+      <button class="btn refresh" onclick="fetchData()">↺ Actualizar ahora</button>
     </div>
-    <div class="collab-card">
-      <div class="collab-avatar">🧑‍🔬</div>
-      <div class="collab-name">CARLOS CAYETANO</div>
-      <div class="collab-role">Colaborador</div>
-    </div>
-    <div class="collab-card">
-      <div class="collab-avatar">🧑‍🏫</div>
-      <div class="collab-name">DANIEL LOPEZ</div>
-      <div class="collab-role">Colaborador</div>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-val" id="statTempMax">--</div>
+        <div class="stat-lbl">TEMP. MÁX</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="statTempMin">--</div>
+        <div class="stat-lbl">TEMP. MÍN</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="statHumMax">--</div>
+        <div class="stat-lbl">HUM. MÁX</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="statHumMin">--</div>
+        <div class="stat-lbl">HUM. MÍN</div>
+      </div>
     </div>
   </div>
-</div>
 
-<footer>ESP32 · THINGSPEAK CANAL 3284038 · AUTO-REFRESH 20s · V3.0 · Mauricio Vela, Carlos Cayetano, Daniel Lopez</footer>
+  <!-- GRÁFICAS -->
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-title">📊 GRÁFICA DE TEMPERATURA</div>
+      <div class="sec-note" id="chartNote">últimas lecturas</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chartTemp" height="100"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-title">💧 GRÁFICA DE HUMEDAD</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chartHum" height="100"></canvas>
+    </div>
+  </div>
+
+  <!-- TABLA HISTORIAL -->
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-title">🗂 HISTORIAL DE REGISTROS</div>
+      <button class="btn success" onclick="downloadCSV()">⬇ Descargar Excel</button>
+    </div>
+    <table id="histTable">
+      <thead>
+        <tr><th>#</th><th>Fecha · Hora</th><th>Temperatura</th><th>Humedad</th></tr>
+      </thead>
+      <tbody id="histBody">
+        <tr><td colspan="4" class="empty"><span class="spinner"></span> Cargando datos...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- COLABORADORES -->
+  <div class="collab">
+    <div class="collab-title">👥 EQUIPO DEL PROYECTO</div>
+    <div class="collab-grid">
+      <div class="collab-card">
+        <div class="collab-avatar">🧑‍💻</div>
+        <div class="collab-name">MAURICIO VELA</div>
+        <div class="collab-role">Desarrollador Principal</div>
+      </div>
+      <div class="collab-card">
+        <div class="collab-avatar">🧑‍🔬</div>
+        <div class="collab-name">CARLOS CAYETANO</div>
+        <div class="collab-role">Colaborador</div>
+      </div>
+      <div class="collab-card">
+        <div class="collab-avatar">🧑‍🏫</div>
+        <div class="collab-name">DANIEL LOPEZ</div>
+        <div class="collab-role">Colaborador</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    ESP32 · DATOS VÍA <a href="https://thingspeak.com" target="_blank">THINGSPEAK</a> ·
+    ALOJADO EN <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a> · V3.0
+  </footer>
 
 </div><!-- /wrap -->
 
-<script>
-// ── CONFIG ──
-const CHANNEL_ID = '3284038';
-const TS_BASE    = 'https://api.thingspeak.com';
-const RESULTS    = 100; // registros a traer
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-// ── ESTRELLAS ──
+<script>
+// ════════════════════════════════════════════════════
+//  CONFIGURACIÓN  ← cambia solo estos dos valores
+// ════════════════════════════════════════════════════
+const TS_CHANNEL_ID = "3284038";
+const TS_READ_KEY   = "IV68XDIEZ0KAVM7N"; // Tu Read API Key (pública)
+const RESULTS       = 50;   // Cuántas lecturas traer (máx 8000 en ThingSpeak)
+const REFRESH_MS    = 20000; // Auto-refresh cada 20 segundos
+// ════════════════════════════════════════════════════
+
+let chartTemp = null;
+let chartHum  = null;
+let allFeeds  = [];
+
+/* ── ESTRELLAS ── */
 (function(){
-  const c=document.getElementById('stars');
-  for(let i=0;i<80;i++){
-    const s=document.createElement('div');s.className='star';
-    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--d:${(Math.random()*4+2).toFixed(1)}s;--del:-${(Math.random()*5).toFixed(1)}s;--op:${(Math.random()*0.5+0.3).toFixed(2)};`;
+  const c = document.getElementById('stars');
+  for(let i = 0; i < 90; i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.cssText = `
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      width:${(Math.random()*2+0.5).toFixed(1)}px;
+      height:${(Math.random()*2+0.5).toFixed(1)}px;
+      --d:${(Math.random()*5+2).toFixed(1)}s;
+      --del:-${(Math.random()*6).toFixed(1)}s;
+      --op:${(Math.random()*0.5+0.2).toFixed(2)};`;
     c.appendChild(s);
   }
 })();
 
-// ── RELOJ ──
+/* ── RELOJ TIEMPO REAL (México UTC-6) ── */
 function updateClock(){
-  const now=new Date();
-  const utc=now.getTime()+now.getTimezoneOffset()*60000;
-  const mx=new Date(utc+(-6*3600000));
-  const pad=n=>String(n).padStart(2,'0');
-  document.getElementById('clock').textContent=pad(mx.getHours())+':'+pad(mx.getMinutes())+':'+pad(mx.getSeconds());
-  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  document.getElementById('dateLabel').textContent=dias[mx.getDay()]+', '+mx.getDate()+' de '+meses[mx.getMonth()]+' '+mx.getFullYear();
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const mx  = new Date(utc + (-6 * 3600000)); // Ajusta el -6 a tu zona horaria
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('clock').textContent =
+    `${pad(mx.getHours())}:${pad(mx.getMinutes())}:${pad(mx.getSeconds())}`;
+  const dias   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
+                  'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('dateLabel').textContent =
+    `${dias[mx.getDay()]}, ${mx.getDate()} de ${meses[mx.getMonth()]} ${mx.getFullYear()}`;
 }
-setInterval(updateClock,1000);updateClock();
+updateClock();
+setInterval(updateClock, 1000);
 
-// ── CHART SETUP ──
-const ctx=document.getElementById('mainChart').getContext('2d');
-let chartMode='temp';
-let chartLabels=[], chartTemps=[], chartHums=[];
+/* ── FORMATEAR FECHA THINGSPEAK → LEGIBLE ── */
+function formatTS(isoStr){
+  const d = new Date(isoStr);
+  // Convertir a UTC-6
+  const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+  const mx  = new Date(utc + (-6 * 3600000));
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(mx.getDate())}/${pad(mx.getMonth()+1)}/${mx.getFullYear()} `
+       + `${pad(mx.getHours())}:${pad(mx.getMinutes())}`;
+}
 
-const mainChart=new Chart(ctx,{
-  type:'line',
-  data:{
-    labels:[],
-    datasets:[
-      {
-        label:'Temperatura (°C)',
-        data:[],
-        borderColor:'#ff6b35',
-        backgroundColor:'rgba(255,107,53,0.08)',
-        borderWidth:2,
-        pointRadius:2,
-        pointHoverRadius:5,
-        tension:0.4,
-        fill:true,
-        yAxisID:'y',
-      },
-      {
-        label:'Humedad (%)',
-        data:[],
-        borderColor:'#00e5ff',
-        backgroundColor:'rgba(0,229,255,0.06)',
-        borderWidth:2,
-        pointRadius:2,
-        pointHoverRadius:5,
-        tension:0.4,
-        fill:true,
-        yAxisID:'y1',
-        hidden:true,
-      }
-    ]
-  },
-  options:{
-    responsive:true,maintainAspectRatio:false,
-    interaction:{mode:'index',intersect:false},
-    plugins:{
-      legend:{
-        labels:{color:'#3a5570',font:{family:"'Share Tech Mono',monospace",size:11}}
-      },
-      tooltip:{
-        backgroundColor:'rgba(8,15,31,0.95)',
-        borderColor:'#162d52',borderWidth:1,
-        titleColor:'#00e5ff',bodyColor:'#b8cfe0',
-        titleFont:{family:"'Orbitron',sans-serif",size:11},
-        bodyFont:{family:"'Share Tech Mono',monospace",size:12},
-      }
+/* ── HACE CUÁNTO (para "feedAge") ── */
+function timeAgo(isoStr){
+  const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+  if(diff < 60)  return `hace ${diff} seg`;
+  if(diff < 3600) return `hace ${Math.floor(diff/60)} min`;
+  return `hace ${Math.floor(diff/3600)}h ${Math.floor((diff%3600)/60)}min`;
+}
+
+/* ── CREAR / ACTUALIZAR GRÁFICA ── */
+function buildChart(canvasId, label, data, labels, color, existingChart){
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const gradient = ctx.createLinearGradient(0,0,0,200);
+  gradient.addColorStop(0, color + '44');
+  gradient.addColorStop(1, color + '00');
+
+  const cfg = {
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label,
+        data,
+        borderColor: color,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: color,
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.4
+      }]
     },
-    scales:{
-      x:{
-        ticks:{color:'#3a5570',font:{family:"'Share Tech Mono',monospace",size:10},maxTicksLimit:10},
-        grid:{color:'rgba(22,45,82,0.4)'},
+    options:{
+      responsive:true,
+      interaction:{ intersect:false, mode:'index' },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#080f1f',
+          borderColor: color,
+          borderWidth:1,
+          titleColor:'#b8cfe0',
+          bodyColor: color,
+          padding:10
+        }
       },
-      y:{
-        ticks:{color:'#ff6b35',font:{family:"'Share Tech Mono',monospace",size:10},callback:v=>v+'°C'},
-        grid:{color:'rgba(22,45,82,0.4)'},
-        position:'left',
-      },
-      y1:{
-        ticks:{color:'#00e5ff',font:{family:"'Share Tech Mono',monospace",size:10},callback:v=>v+'%'},
-        grid:{drawOnChartArea:false},
-        position:'right',
-        display:false,
+      scales:{
+        x:{
+          ticks:{ color:'#3a5570', font:{family:'Share Tech Mono',size:10}, maxTicksLimit:8 },
+          grid:{ color:'rgba(22,45,82,0.4)' }
+        },
+        y:{
+          ticks:{ color:'#3a5570', font:{family:'Share Tech Mono',size:11} },
+          grid:{ color:'rgba(22,45,82,0.4)' }
+        }
       }
     }
-  }
-});
+  };
 
-function switchChart(mode,btn){
-  chartMode=mode;
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  if(mode==='temp'){
-    mainChart.data.datasets[0].hidden=false;
-    mainChart.data.datasets[1].hidden=true;
-    mainChart.options.scales.y1.display=false;
-  }else if(mode==='hum'){
-    mainChart.data.datasets[0].hidden=true;
-    mainChart.data.datasets[1].hidden=false;
-    mainChart.options.scales.y1.display=true;
-  }else{
-    mainChart.data.datasets[0].hidden=false;
-    mainChart.data.datasets[1].hidden=false;
-    mainChart.options.scales.y1.display=true;
-  }
-  mainChart.update();
+  if(existingChart){ existingChart.destroy(); }
+  return new Chart(ctx, cfg);
 }
 
-// ── THINGSPEAK FETCH ──
-let allFeeds=[];
-
+/* ── FETCH PRINCIPAL ── */
 async function fetchData(){
-  try{
-    const url=`${TS_BASE}/channels/${CHANNEL_ID}/feeds.json?results=${RESULTS}`;
-    const res=await fetch(url);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const json=await res.json();
-    allFeeds=json.feeds||[];
-    updateUI(allFeeds);
-    setStatus(true);
-  }catch(e){
-    console.error('ThingSpeak error:',e);
-    setStatus(false,'Error al conectar con ThingSpeak: '+e.message);
-  }
-}
+  const url = `https://api.thingspeak.com/channels/${TS_CHANNEL_ID}/feeds.json`
+            + `?api_key=${TS_READ_KEY}&results=${RESULTS}`;
+  try {
+    const res   = await fetch(url);
+    const json  = await res.json();
+    const feeds = json.feeds || [];
+    allFeeds    = feeds;
 
-function setStatus(ok,msg=''){
-  const dot=document.getElementById('statusDot');
-  const msgEl=document.getElementById('statusMsg');
-  const badge=document.getElementById('sensorBadge');
-  const now=new Date();
-  const pad=n=>String(n).padStart(2,'0');
-  const utc=now.getTime()+now.getTimezoneOffset()*60000;
-  const mx=new Date(utc+(-6*3600000));
-  document.getElementById('lastUpdate').textContent=pad(mx.getHours())+':'+pad(mx.getMinutes())+':'+pad(mx.getSeconds());
-  if(ok){
-    dot.classList.remove('err');
-    msgEl.textContent='Datos recibidos correctamente desde ThingSpeak';
-    badge.className='badge online';
-    badge.textContent='● SENSOR ONLINE';
-  }else{
-    dot.classList.add('err');
-    msgEl.textContent=msg||'Error de conexión';
-    badge.className='badge offline';
-    badge.textContent='✖ ERROR DE CONEXIÓN';
-  }
-}
-
-// Convierte timestamp UTC de ThingSpeak a hora México UTC-6
-function tsToMx(tsStr){
-  const d=new Date(tsStr);
-  const utc=d.getTime()+d.getTimezoneOffset()*60000;
-  return new Date(utc+(-6*3600000));
-}
-
-function formatDatetime(d){
-  const pad=n=>String(n).padStart(2,'0');
-  return `${d.getDate()}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function formatTime(d){
-  const pad=n=>String(n).padStart(2,'0');
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function updateUI(feeds){
-  if(!feeds.length) return;
-
-  // Último dato
-  const latest=feeds[feeds.length-1];
-  const t=parseFloat(latest.field1);
-  const h=parseFloat(latest.field2);
-  const mxDate=tsToMx(latest.created_at);
-
-  // Cards sensores
-  document.getElementById('tempVal').innerHTML=
-    (!isNaN(t)?t.toFixed(1):'—')+"<span class='s-unit'>°C</span>";
-  document.getElementById('humVal').innerHTML=
-    (!isNaN(h)?h.toFixed(1):'—')+"<span class='s-unit'>%</span>";
-  document.getElementById('tempBar').style.width=
-    (!isNaN(t)?Math.min(100,Math.max(0,((t/50)*100)))+'%':'0%');
-  document.getElementById('humBar').style.width=
-    (!isNaN(h)?Math.min(100,h)+'%':'0%');
-
-  // Tendencia
-  if(feeds.length>=2){
-    const prev=feeds[feeds.length-2];
-    const pt=parseFloat(prev.field1), ph=parseFloat(prev.field2);
-    if(!isNaN(t)&&!isNaN(pt)){
-      const dt=(t-pt).toFixed(1);
-      document.getElementById('tempTrend').textContent=
-        dt>0?'↑ +'+dt+'°C vs anterior':'↓ '+dt+'°C vs anterior';
+    if(!feeds.length){
+      setBadge('offline','✖ SIN DATOS');
+      return;
     }
-    if(!isNaN(h)&&!isNaN(ph)){
-      const dh=(h-ph).toFixed(1);
-      document.getElementById('humTrend').textContent=
-        dh>0?'↑ +'+dh+'% vs anterior':'↓ '+dh+'% vs anterior';
+
+    const last   = feeds[feeds.length - 1];
+    const lastT  = parseFloat(last.field1);
+    const lastH  = parseFloat(last.field2);
+    const isOk   = !isNaN(lastT) && !isNaN(lastH);
+
+    /* --- Badges --- */
+    setBadge(isOk ? 'online' : 'offline', isOk ? '● SENSOR ONLINE' : '✖ SENSOR OFFLINE');
+
+    /* --- Fecha último dato --- */
+    document.getElementById('lastUpdated').textContent = formatTS(last.created_at);
+    document.getElementById('feedAge').textContent     = timeAgo(last.created_at);
+
+    /* --- Valores actuales --- */
+    if(isOk){
+      document.getElementById('tempVal').innerHTML =
+        lastT.toFixed(1) + '<span class="s-unit">°C</span>';
+      document.getElementById('humVal').innerHTML  =
+        lastH.toFixed(1) + '<span class="s-unit">%</span>';
+
+      const tPct = Math.min(100, Math.max(0, (lastT / 50) * 100));
+      const hPct = Math.min(100, Math.max(0, lastH));
+      document.getElementById('tempBar').style.width = tPct + '%';
+      document.getElementById('humBar').style.width  = hPct + '%';
+
+      const tLabel = lastT > 30 ? '🔴 Temperatura alta' : lastT < 18 ? '🔵 Temperatura fría' : '🟢 Temperatura normal';
+      const hLabel = lastH > 80 ? '💦 Humedad muy alta'  : lastH < 30 ? '🏜️ Humedad muy baja' : '✅ Humedad normal';
+      document.getElementById('tempStatus').textContent = tLabel;
+      document.getElementById('humStatus').textContent  = hLabel;
     }
-  }
 
-  // Último registro card
-  document.getElementById('lastlogTime').textContent=formatDatetime(mxDate);
-  document.getElementById('entryCount').textContent='Total de registros: '+feeds.length;
+    /* --- Estadísticas --- */
+    const temps = feeds.map(f => parseFloat(f.field1)).filter(v => !isNaN(v));
+    const hums  = feeds.map(f => parseFloat(f.field2)).filter(v => !isNaN(v));
+    if(temps.length){
+      document.getElementById('statTempMax').textContent = Math.max(...temps).toFixed(1) + '°';
+      document.getElementById('statTempMin').textContent = Math.min(...temps).toFixed(1) + '°';
+    }
+    if(hums.length){
+      document.getElementById('statHumMax').textContent = Math.max(...hums).toFixed(1) + '%';
+      document.getElementById('statHumMin').textContent = Math.min(...hums).toFixed(1) + '%';
+    }
 
-  // Chart
-  const chartFeeds=feeds.slice(-60); // últimos 60 puntos
-  chartLabels=chartFeeds.map(f=>formatTime(tsToMx(f.created_at)));
-  chartTemps=chartFeeds.map(f=>parseFloat(f.field1)||null);
-  chartHums=chartFeeds.map(f=>parseFloat(f.field2)||null);
-  mainChart.data.labels=chartLabels;
-  mainChart.data.datasets[0].data=chartTemps;
-  mainChart.data.datasets[1].data=chartHums;
-  mainChart.update();
+    /* --- Gráficas --- */
+    const labels = feeds.map(f => {
+      const d = new Date(f.created_at);
+      const utc = d.getTime() + d.getTimezoneOffset()*60000;
+      const mx  = new Date(utc + (-6*3600000));
+      return `${String(mx.getHours()).padStart(2,'0')}:${String(mx.getMinutes()).padStart(2,'0')}`;
+    });
+    const tData = feeds.map(f => parseFloat(f.field1) || null);
+    const hData = feeds.map(f => parseFloat(f.field2) || null);
 
-  // Tabla historial
-  const tbody=document.getElementById('historyBody');
-  tbody.innerHTML='';
-  const reversed=[...feeds].reverse().slice(0,50);
-  reversed.forEach((f,i)=>{
-    const temp=parseFloat(f.field1);
-    const hum=parseFloat(f.field2);
-    const d=tsToMx(f.created_at);
-    const tc=temp>30?'hot':(temp<18?'cold':'ok');
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${i+1}</td><td>${formatDatetime(d)}</td><td class="${tc}">${!isNaN(temp)?temp.toFixed(1)+' °C':'—'}</td><td>${!isNaN(hum)?hum.toFixed(1)+' %':'—'}</td>`;
-    tbody.appendChild(tr);
-  });
-  document.getElementById('recordCountLabel').textContent=feeds.length+' registros';
+    document.getElementById('chartNote').textContent = `${feeds.length} lecturas`;
 
-  // Resumen semanal
-  buildWeeklySummary(feeds);
-}
+    chartTemp = buildChart('chartTemp','Temperatura (°C)', tData, labels, '#ff6b35', chartTemp);
+    chartHum  = buildChart('chartHum', 'Humedad (%)',       hData, labels, '#00e5ff', chartHum);
 
-function buildWeeklySummary(feeds){
-  const dias=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
-  const summary={};
-  for(let d=0;d<7;d++) summary[d]={temps:[],hums:[]};
+    /* --- Tabla historial --- */
+    const tbody = document.getElementById('histBody');
+    tbody.innerHTML = '';
+    const reversed = [...feeds].reverse();
+    reversed.forEach((f, i) => {
+      const t    = parseFloat(f.field1);
+      const h    = parseFloat(f.field2);
+      const tCls = t > 30 ? 'hot' : t < 18 ? 'cold' : 'ok';
+      const tr   = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${formatTS(f.created_at)}</td>
+        <td class="${tCls}">${isNaN(t) ? '—' : t.toFixed(1) + ' °C'}</td>
+        <td>${isNaN(h) ? '—' : h.toFixed(1) + ' %'}</td>`;
+      tbody.appendChild(tr);
+    });
 
-  const now=new Date();
-  const weekAgo=new Date(now.getTime()-7*24*60*60*1000);
-
-  feeds.forEach(f=>{
-    const d=new Date(f.created_at);
-    if(d<weekAgo) return;
-    // JS getDay: 0=Dom, ajustar a 0=Lun
-    let wd=(d.getDay()+6)%7;
-    const t=parseFloat(f.field1), h=parseFloat(f.field2);
-    if(!isNaN(t)) summary[wd].temps.push(t);
-    if(!isNaN(h)) summary[wd].hums.push(h);
-  });
-
-  const tbody=document.getElementById('weekBody');
-  tbody.innerHTML='';
-  let hasData=false;
-  for(let d=0;d<7;d++){
-    const {temps,hums}=summary[d];
-    if(temps.length>0) hasData=true;
-    const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
-    const max=arr=>arr.length?Math.max(...arr):null;
-    const min=arr=>arr.length?Math.min(...arr):null;
-    const ta=avg(temps), tm=max(temps), tn=min(temps), ha=avg(hums);
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td>${dias[d]}</td>
-      <td>${ta!==null?ta.toFixed(1)+' °C':'—'}</td>
-      <td class="${tm>30?'hot':''}">${tm!==null?tm.toFixed(1)+' °C':'—'}</td>
-      <td class="${tn<18?'cold':''}">${tn!==null?tn.toFixed(1)+' °C':'—'}</td>
-      <td>${ha!==null?ha.toFixed(1)+' %':'—'}</td>
-    `;
-    tbody.appendChild(tr);
-  }
-  if(!hasData){
-    tbody.innerHTML='<tr><td colspan="5" class="empty">— SIN DATOS EN LOS ÚLTIMOS 7 DÍAS —</td></tr>';
+  } catch(err){
+    console.error('Error ThingSpeak:', err);
+    setBadge('offline','✖ ERROR DE CONEXIÓN');
+    document.getElementById('histBody').innerHTML =
+      '<tr><td colspan="4" class="empty">⚠ No se pudo conectar con ThingSpeak.<br>Verifica tu conexión a internet.</td></tr>';
   }
 }
 
-// ── DESCARGAR CSV ──
+function setBadge(cls, text){
+  const b = document.getElementById('badgeSensor');
+  b.className = 'badge ' + cls;
+  b.textContent = text;
+}
+
+/* ── DESCARGAR CSV (compatible Excel) ── */
 function downloadCSV(){
-  let csv='#,Fecha,Hora,Temperatura (°C),Humedad (%)\n';
-  [...allFeeds].reverse().forEach((f,i)=>{
-    const d=tsToMx(f.created_at);
-    const pad=n=>String(n).padStart(2,'0');
-    const fecha=`${d.getDate()}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
-    const hora=`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    const t=parseFloat(f.field1), h=parseFloat(f.field2);
-    csv+=`${i+1},"${fecha}","${hora}",${!isNaN(t)?t.toFixed(1):''},${!isNaN(h)?h.toFixed(1):''}\n`;
+  if(!allFeeds.length){ alert('No hay datos para descargar.'); return; }
+  let csv = 'Fecha,Hora,Temperatura (°C),Humedad (%)\n';
+  allFeeds.forEach(f => {
+    const d   = new Date(f.created_at);
+    const utc = d.getTime() + d.getTimezoneOffset()*60000;
+    const mx  = new Date(utc + (-6*3600000));
+    const pad = n => String(n).padStart(2,'0');
+    const fecha = `${pad(mx.getDate())}/${pad(mx.getMonth()+1)}/${mx.getFullYear()}`;
+    const hora  = `${pad(mx.getHours())}:${pad(mx.getMinutes())}`;
+    const t = parseFloat(f.field1);
+    const h = parseFloat(f.field2);
+    csv += `"${fecha}","${hora}","${isNaN(t)?'':t.toFixed(1)}","${isNaN(h)?'':h.toFixed(1)}"\n`;
   });
-  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='historial_ESP32.csv';
+  const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `clima_ESP32_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
 
-// ── INIT & AUTO-REFRESH ──
+/* ── ARRANQUE Y AUTO-REFRESH ── */
 fetchData();
-setInterval(fetchData, 20000);
+setInterval(fetchData, REFRESH_MS);
+
+// Actualizar "hace X min" cada 30s sin re-fetch
+setInterval(() => {
+  const lu = document.getElementById('lastUpdated').textContent;
+  if(allFeeds.length){
+    const last = allFeeds[allFeeds.length-1];
+    document.getElementById('feedAge').textContent = timeAgo(last.created_at);
+  }
+}, 30000);
 </script>
 </body>
 </html>
