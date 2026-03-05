@@ -619,20 +619,8 @@ footer a { color:var(--green2); text-decoration:none; }
       <div class="s-card-title">&#9679; Last 8 Recorded Hours (today)</div>
       <span class="s-card-meta" id="hourlyMeta">—</span>
     </div>
-    <!-- Daily records progress -->
-    <div class="prog-wrap">
-      <div class="prog-lbl">
-        <span>Daily records progress</span>
-        <span id="progPct">0 / 8</span>
-      </div>
-      <div class="prog-track"><div class="prog-fill" id="dayBar" style="width:0%"></div></div>
-      <div class="prog-ticks">
-        <span>00h</span><span>03h</span><span>06h</span><span>09h</span>
-        <span>12h</span><span>15h</span><span>18h</span><span>21h</span><span>24h</span>
-      </div>
-    </div>
-    <!-- Countdown to next record -->
-    <div class="prog-wrap" style="border-bottom:none">
+    <!-- Countdown to next record only -->
+    <div class="prog-wrap" style="border-bottom:1px solid var(--border)">
       <div class="prog-lbl">
         <span style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--green);font-size:10px">&#9650;</span>
@@ -865,14 +853,14 @@ function renderHero(tv, hv, bd) {
 
 /* ── RENDER: HOURLY TABLE (today's records only, up to 8) ── */
 function renderHourly(bd) {
-  const dh  = todayWD();
-  const reg = (bd[dh] && bd[dh].feeds) ? bd[dh].feeds : [];
+  const dh = todayWD();
+
+  // Only include feeds where field3 matches today's weekday exactly (real records, not heartbeats)
+  const reg = feeds.filter(f => parseInt(f.field3) === dh);
   const n   = reg.length;
-  const pct = Math.min(100, (n/8)*100).toFixed(0);
-  document.getElementById('dayBar').style.width = pct+'%';
-  document.getElementById('progPct').textContent = n+' / 8 records';
+
   document.getElementById('hourlyMeta').textContent =
-    DAYS_LONG[dh-1]+' · '+pct+'% complete';
+    DAYS_LONG[dh-1] + ' · ' + n + ' / 8 records';
 
   const tb = document.getElementById('hourlyBody');
   tb.innerHTML = '';
@@ -881,16 +869,16 @@ function renderHourly(bd) {
     return;
   }
   // Show most recent first
-  const sorted = [...reg].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const sorted = [...reg].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   sorted.forEach((f, i) => {
-    const tv=parseFloat(f.field1), hv=parseFloat(f.field2);
-    const tc = tv>30?'c-coral':tv<18?'c-teal':'';
+    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
+    const tc = tv > 30 ? 'c-coral' : tv < 18 ? 'c-teal' : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="mono c-muted">${sorted.length-i}</td>
+      <td class="mono c-muted">${sorted.length - i}</td>
       <td class="mono">${fmtTime(f.created_at)}</td>
-      <td class="mono ${tc}">${isNaN(tv)?'—':tv.toFixed(1)}</td>
-      <td class="mono c-teal">${isNaN(hv)?'—':hv.toFixed(1)}</td>`;
+      <td class="mono ${tc}">${isNaN(tv) ? '—' : tv.toFixed(1)}</td>
+      <td class="mono c-teal">${isNaN(hv) ? '—' : hv.toFixed(1)}</td>`;
     tb.appendChild(tr);
   });
 }
