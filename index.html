@@ -3,909 +3,658 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CLIMALOG · Weekly Climate Monitor</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<title>CLIMALOG · ESP32 DHT Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-/* ═══════════════════════════════════════════════
-   CLIMALOG — Clean Scientific Dashboard
-   Aesthetic: Modern lab instrument + fresh air
-   Light base, teal/coral accents, crisp readouts
-   ═══════════════════════════════════════════════ */
+/* =====================================================
+   CLIMALOG  —  Space / Sci-Fi dark dashboard
+   Matches the ESP32 DHT Monitor aesthetic from screenshots
+   ===================================================== */
 :root {
-  --bg:       #f4f6f8;
-  --surface:  #ffffff;
-  --surface2: #f9fafb;
-  --border:   #e4e8ee;
-  --teal:     #0bb5a4;
-  --teal-lt:  #e0f7f5;
-  --teal-dk:  #089288;
-  --coral:    #ff6b4a;
-  --coral-lt: #fff0ec;
-  --navy:     #1a2332;
-  --navy2:    #2d3a4e;
-  --muted:    #8a95a3;
-  --text:     #2d3a4e;
-  --text-lt:  #5a6575;
-  --green:    #22c55e;
-  --red:      #ef4444;
-  --yellow:   #f59e0b;
-  --shadow:   0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
-  --shadow-md:0 2px 8px rgba(0,0,0,.1), 0 8px 32px rgba(0,0,0,.06);
+  --bg:       #0a0f1e;
+  --bg2:      #0d1428;
+  --surface:  #111827;
+  --surface2: #141e2e;
+  --border:   #1e3058;
+  --border2:  #243660;
+  --green:    #00ff88;
+  --green2:   #00cc6a;
+  --green-lt: rgba(0,255,136,.08);
+  --teal:     #00d4c8;
+  --teal2:    #5bb8d4;
+  --coral:    #e07070;
+  --coral2:   #f0a0a0;
+  --pink:     #ff4466;
+  --blue:     #4488ff;
+  --text:     #c8d8f0;
+  --text2:    #8a9ab8;
+  --muted:    #4a5878;
   --r:        12px;
   --r-sm:     8px;
+  --glow-g:   0 0 16px rgba(0,255,136,.3);
+  --glow-t:   0 0 16px rgba(0,212,200,.3);
+  --glow-c:   0 0 16px rgba(224,112,112,.3);
 }
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; }
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Exo 2', sans-serif;
   font-weight: 400;
   min-height: 100vh;
-  line-height: 1.6;
+  overflow-x: hidden;
 }
 
-/* ─── TOPBAR ─────────────────────────────────────── */
-.topbar {
-  background: var(--navy);
+/* Subtle grid background */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,255,136,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,136,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Stars */
+body::after {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    radial-gradient(1px 1px at 8%  12%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 22% 35%, rgba(255,255,255,.3) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 6%, rgba(255,255,255,.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 68% 20%, rgba(255,255,255,.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 55%, rgba(255,255,255,.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 8%,  rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 70%, rgba(255,255,255,.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 80%, rgba(255,255,255,.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 92%, rgba(255,255,255,.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 88%, rgba(255,255,255,.25) 0%, transparent 100%);
+}
+
+.page { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:0 20px 80px; }
+
+/* ─── HEADER ─── */
+.site-header {
+  text-align: center;
+  padding: 36px 0 28px;
+  position: relative;
+}
+.site-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 900;
+  letter-spacing: 4px;
   color: #fff;
-  padding: 0 32px;
-  height: 56px;
+  text-shadow: 0 0 40px rgba(0,255,136,.3);
+}
+.site-title .hl { color: var(--green); text-shadow: var(--glow-g); }
+.site-subtitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--text2);
+  margin-top: 8px;
+  text-transform: uppercase;
+}
+
+/* Moon decoration */
+.moon {
+  position: absolute;
+  right: 0; top: 10px;
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #e8e8d0, #c0c0a8 60%, #909080);
+  box-shadow: 0 0 30px rgba(200,200,160,.3), 0 0 60px rgba(200,200,160,.1);
+  opacity: .7;
+}
+
+/* ─── STATUS TOPBAR ─── */
+.status-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.topbar-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.topbar-logo {
-  font-family: 'Syne', sans-serif;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--teal);
-}
-.topbar-sep { width: 1px; height: 24px; background: rgba(255,255,255,.15); }
-.topbar-sub {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: rgba(255,255,255,.45);
-  letter-spacing: 1px;
-}
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 .status-pill {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 100px;
-  padding: 5px 14px;
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  letter-spacing: .5px;
-}
-.dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.dot-on    { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s ease-in-out infinite; }
-.dot-off   { background: var(--red);   box-shadow: 0 0 8px var(--red); }
-.dot-wait  { background: var(--yellow); }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-/* ─── LAYOUT ──────────────────────────────────────── */
-.page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 28px 24px 80px;
-}
-
-/* ─── PAGE HEADER ─────────────────────────────────── */
-.page-hdr {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-.page-hdr-left h1 {
-  font-family: 'Syne', sans-serif;
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--navy);
-  line-height: 1;
-}
-.page-hdr-left p {
-  color: var(--muted);
-  font-size: 13px;
-  margin-top: 4px;
-}
-.clock-box {
-  text-align: right;
-}
-.clock-time {
-  font-family: 'Space Mono', monospace;
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--navy);
-  letter-spacing: 2px;
-}
-.clock-date {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 3px;
-  letter-spacing: 1px;
-}
-
-/* ─── CARD ────────────────────────────────────────── */
-.card {
-  background: var(--surface);
-  border-radius: var(--r);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.card-title {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--navy);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.card-title-icon {
-  width: 28px; height: 28px;
-  border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-}
-.icon-teal  { background: var(--teal-lt); }
-.icon-coral { background: var(--coral-lt); }
-.card-meta {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: .5px;
-}
-
-/* ─── GRID LAYOUTS ────────────────────────────────── */
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
-.grid-7 { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; }
-.mb-4 { margin-bottom: 16px; }
-.mb-5 { margin-bottom: 20px; }
-
-/* ─── LIVE READINGS ───────────────────────────────── */
-.reading-card {
-  background: var(--surface);
-  border-radius: var(--r);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-}
-.reading-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-}
-.reading-card.temp-card::before { background: linear-gradient(90deg, var(--coral), #ff9a84); }
-.reading-card.hum-card::before  { background: linear-gradient(90deg, var(--teal), #5dddd1); }
-.reading-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.reading-badge {
-  font-size: 9px;
-  letter-spacing: 1px;
-  padding: 2px 8px;
-  border-radius: 100px;
-}
-.badge-coral { background: var(--coral-lt); color: var(--coral); }
-.badge-teal  { background: var(--teal-lt);  color: var(--teal-dk); }
-.reading-value {
-  font-family: 'Syne', sans-serif;
-  font-size: 68px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -2px;
-}
-.reading-card.temp-card .reading-value { color: var(--coral); }
-.reading-card.hum-card  .reading-value { color: var(--teal); }
-.reading-unit {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 20px;
-  font-weight: 300;
-  color: var(--muted);
-  margin-left: 4px;
-}
-.reading-bar {
-  height: 4px;
-  background: var(--bg);
-  border-radius: 2px;
-  margin-top: 16px;
-  overflow: hidden;
-}
-.reading-bar-fill {
-  height: 4px;
-  border-radius: 2px;
-  transition: width 1.5s ease;
-}
-.temp-card .reading-bar-fill { background: linear-gradient(90deg, #ffb89e, var(--coral)); }
-.hum-card  .reading-bar-fill { background: linear-gradient(90deg, #9aeae5, var(--teal)); }
-.reading-status {
-  font-size: 12px;
-  color: var(--text-lt);
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.reading-status .dot { width: 6px; height: 6px; }
-
-/* ─── STAT BOXES ──────────────────────────────────── */
-.stat-card {
-  background: var(--surface);
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 16px 20px;
-  text-align: center;
-}
-.stat-value {
-  font-family: 'Syne', sans-serif;
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1;
-}
-.stat-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin-top: 6px;
-}
-.c-coral  { color: var(--coral); }
-.c-teal   { color: var(--teal-dk); }
-.c-navy   { color: var(--navy); }
-.c-muted  { color: var(--muted); }
-.c-green  { color: var(--green); }
-.c-red    { color: var(--red); }
-
-/* ─── PROGRESS BAR ────────────────────────────────── */
-.prog-wrap { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-.prog-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--text-lt);
-  margin-bottom: 8px;
-}
-.prog-label span:last-child {
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  color: var(--teal-dk);
-  font-weight: 700;
-}
-.prog-track {
-  height: 8px;
-  background: var(--bg);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.prog-fill {
-  height: 8px;
-  background: linear-gradient(90deg, var(--teal-lt), var(--teal));
-  border-radius: 4px;
-  transition: width 1.2s ease;
-  position: relative;
-}
-.prog-ticks {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  color: var(--muted);
-}
-
-/* ─── TABLES ──────────────────────────────────────── */
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  text-align: left;
-  padding: 10px 20px;
-  background: var(--surface2);
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-td {
-  font-size: 13px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-  white-space: nowrap;
-}
-tr:last-child td { border-bottom: none; }
-tbody tr:hover td { background: #f8fffe; }
-.mono { font-family: 'Space Mono', monospace; font-size: 12px; }
-.empty-row {
-  text-align: center;
-  padding: 40px 20px !important;
-  color: var(--muted) !important;
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 1px;
-}
-
-/* ─── WEEK TILES ──────────────────────────────────── */
-.tile {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 14px 8px 12px;
-  text-align: center;
-  transition: box-shadow .2s, border-color .2s;
-  position: relative;
-}
-.tile:hover { box-shadow: var(--shadow-md); }
-.tile.t-has-data { border-color: var(--teal); border-top-width: 2px; }
-.tile.t-today    { background: var(--teal-lt); border-color: var(--teal); }
-.tile.t-future   { opacity: .35; }
-.tile-today-badge {
-  position: absolute;
-  top: -1px; left: 50%; transform: translateX(-50%);
-  background: var(--teal);
-  color: #fff;
-  font-family: 'Space Mono', monospace;
-  font-size: 7px;
-  letter-spacing: 1px;
-  padding: 2px 8px;
-  border-radius: 0 0 6px 6px;
-  white-space: nowrap;
-}
-.tile-day {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.tile.t-today .tile-day { color: var(--teal-dk); font-weight: 700; }
-.tile-temp {
-  font-family: 'Syne', sans-serif;
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--coral);
-  line-height: 1;
-}
-.tile-hum {
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  color: var(--teal-dk);
-  margin-top: 4px;
-}
-.tile-count {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  color: var(--muted);
-  margin-top: 6px;
-}
-.tile-dash { font-size: 18px; color: var(--border); margin-top: 8px; }
-
-/* ─── CHARTS ──────────────────────────────────────── */
-.chart-container { padding: 20px; }
-.chart-title {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 12px;
-}
-
-/* ─── BUTTON ──────────────────────────────────────── */
-.btn {
   font-family: 'Space Mono', monospace;
   font-size: 10px;
   letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 7px 16px;
+}
+.dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.dot-on   { background:var(--green); box-shadow:var(--glow-g); animation:pulse 2s ease-in-out infinite; }
+.dot-off  { background:var(--pink);  box-shadow:0 0 8px var(--pink); }
+.dot-wait { background:#f59e0b; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.sbtn {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 6px 16px;
   border-radius: 6px;
-  border: 1.5px solid var(--border);
-  background: transparent;
-  color: var(--text-lt);
+  border: 1px solid var(--green2);
+  background: rgba(0,255,136,.08);
+  color: var(--green);
   cursor: pointer;
   transition: all .15s;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
-.btn:hover { border-color: var(--teal); color: var(--teal-dk); background: var(--teal-lt); }
-.btn.btn-primary { background: var(--teal); border-color: var(--teal); color: #fff; }
-.btn.btn-primary:hover { background: var(--teal-dk); border-color: var(--teal-dk); }
+.sbtn:hover { background: rgba(0,255,136,.18); }
 
-/* ─── INFO STRIP ──────────────────────────────────── */
-.info-strip {
-  display: flex;
-  gap: 0;
+/* ─── HERO CARDS ROW ─── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.hero-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
+  padding: 18px 16px 16px;
+  position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow);
-  flex-wrap: wrap;
-  margin-bottom: 20px;
+  transition: border-color .2s;
 }
-.info-cell {
-  padding: 14px 22px;
-  border-right: 1px solid var(--border);
-  flex-shrink: 0;
+.hero-card::before {
+  content:'';
+  position:absolute; inset:0; pointer-events:none;
+  background: radial-gradient(ellipse at top left, rgba(0,255,136,.04) 0%, transparent 70%);
 }
-.info-cell:last-child { border-right: none; margin-left: auto; }
-.info-cell-label {
+.hero-card:hover { border-color: var(--border2); }
+.hero-icon { font-size: 22px; margin-bottom: 10px; display:block; }
+.hero-label {
   font-family: 'Space Mono', monospace;
   font-size: 9px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 4px;
-}
-.info-cell-val {
-  font-family: 'Space Mono', monospace;
-  font-size: 12px;
-  color: var(--navy);
-  font-weight: 700;
-}
-
-/* ─── TEAM ────────────────────────────────────────── */
-.team-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; }
-.team-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  border-right: 1px solid var(--border);
-  transition: background .15s;
-}
-.team-card:last-child { border-right: none; }
-.team-card:hover { background: var(--teal-lt); }
-.team-avatar {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--teal-lt), #c7f5f2);
-  border: 1.5px solid var(--teal);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--teal-dk);
-  flex-shrink: 0;
-}
-.team-name { font-weight: 600; font-size: 14px; color: var(--navy); }
-.team-role { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-/* ─── FOOTER ──────────────────────────────────────── */
-footer {
-  border-top: 1px solid var(--border);
-  padding-top: 20px;
-  margin-top: 20px;
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: var(--muted);
-  text-align: center;
-  letter-spacing: 1px;
-}
-footer a { color: var(--teal-dk); text-decoration: none; }
-footer a:hover { text-decoration: underline; }
-
-/* ─── SPINNER ─────────────────────────────────────── */
-.spin {
-  display: inline-block;
-  width: 12px; height: 12px;
-  border: 1.5px solid var(--border);
-  border-top-color: var(--teal);
-  border-radius: 50%;
-  animation: rot .7s linear infinite;
-  vertical-align: middle;
-  margin-right: 6px;
-}
-@keyframes rot { to { transform: rotate(360deg); } }
-
-/* ─── SECTION LABEL ───────────────────────────────── */
-.section-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
   letter-spacing: 2px;
-  text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 10px;
-  padding-left: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.hero-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--green);
+  text-shadow: var(--glow-g);
+}
+.hero-val.c-coral { color: var(--coral); text-shadow: var(--glow-c); }
+.hero-val.c-teal  { color: var(--teal);  text-shadow: var(--glow-t); }
+.hero-val.c-pink  { color: var(--pink);  text-shadow: 0 0 16px rgba(255,68,102,.4); }
+.hero-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--text2);
+  margin-top: 6px;
+}
+.hero-sub .up   { color: var(--coral); }
+.hero-sub .down { color: var(--teal2); }
+.online-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,255,136,.1);
+  border: 1px solid rgba(0,255,136,.3);
+  border-radius: 100px;
+  padding: 3px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--green);
+  margin-top: 8px;
 }
 
-/* ─── SPACE DARK CHARTS (Weekly Charts section) ──────────── */
-.space-panel {
-  background: #0d1b3e;
-  border-radius: var(--r);
-  border: 1px solid #1e3060;
-  box-shadow: 0 0 0 1px rgba(100,160,255,.07), 0 8px 32px rgba(0,0,20,.4);
-  overflow: hidden;
-  position: relative;
-}
-.space-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,.4) 0%, transparent 100%),
-    radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,.25) 0%, transparent 100%),
-    radial-gradient(1px 1px at 55% 8%,  rgba(255,255,255,.35) 0%, transparent 100%),
-    radial-gradient(1px 1px at 75% 25%, rgba(255,255,255,.3) 0%, transparent 100%),
-    radial-gradient(1px 1px at 88% 60%, rgba(255,255,255,.2) 0%, transparent 100%),
-    radial-gradient(1px 1px at 20% 80%, rgba(255,255,255,.15) 0%, transparent 100%),
-    radial-gradient(1px 1px at 65% 70%, rgba(255,255,255,.2) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 92% 12%, rgba(255,255,255,.3) 0%, transparent 100%),
-    radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,.2) 0%, transparent 100%);
-  z-index: 0;
-}
-.space-panel > * { position: relative; z-index: 1; }
-.space-panel-header {
+/* ─── SECTION HEADERS ─── */
+.sec-hdr {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 20px;
-  border-bottom: 1px solid #1e3060;
-  background: rgba(255,255,255,.02);
+  margin-bottom: 14px;
+  margin-top: 8px;
 }
-.space-icon { color: #4ade80; font-size: 14px; }
-.space-title {
+.sec-hdr-icon {
+  width: 14px; height: 14px;
+  border: 2px solid var(--green);
+  background: rgba(0,255,136,.2);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.sec-hdr-title {
   font-family: 'Space Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 3px;
-  color: #4ade80;
+  color: var(--green);
   text-transform: uppercase;
 }
-.space-chart-box {
-  background: rgba(255,255,255,.03);
-  border: 1px solid #1e3060;
-  border-radius: 10px;
-  padding: 16px;
+.sec-hdr-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border2), transparent);
 }
-.space-chart-label {
+
+/* ─── SPACE CARD ─── */
+.s-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 20px;
+  position: relative;
+}
+.s-card::before {
+  content:'';
+  position:absolute; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 15%, rgba(255,255,255,.15) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 75%, rgba(255,255,255,.1) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 70%, rgba(255,255,255,.15) 0%, transparent 100%);
+}
+.s-card > * { position:relative; z-index:1; }
+.s-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.s-card-title {
   font-family: 'Space Mono', monospace;
   font-size: 10px;
   letter-spacing: 2px;
-  color: #8ab4d4;
+  color: var(--teal2);
   text-transform: uppercase;
-  margin-bottom: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
-/* ─── THINGSPEAK DARK CARDS ───────────────────────────────── */
-.ts-dark-card {
-  background: #0f1f44 !important;
-  border-color: #1e3060 !important;
-  box-shadow: 0 0 0 1px rgba(100,160,255,.07), 0 8px 32px rgba(0,0,20,.4) !important;
-}
-.ts-dark-head {
-  background: #1a2744 !important;
-  border-bottom-color: #1e3060 !important;
-}
-.ts-btn-ghost {
-  border-color: #2a4080 !important;
-  color: #8ab4d4 !important;
-}
-.ts-btn-ghost:hover {
-  border-color: #5bb8d4 !important;
-  color: #5bb8d4 !important;
-  background: rgba(91,184,212,.1) !important;
+.s-card-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
 }
 
-/* ─── RESPONSIVE ──────────────────────────────────── */
-@media (max-width: 768px) {
-  .grid-2 { grid-template-columns: 1fr; }
-  .grid-4 { grid-template-columns: 1fr 1fr; }
-  .grid-7 { grid-template-columns: repeat(4,1fr); }
-  .team-grid { grid-template-columns: 1fr; }
-  .team-card { border-right: none; border-bottom: 1px solid var(--border); }
-  .page-hdr { flex-direction: column; align-items: flex-start; }
-  .topbar { padding: 0 16px; }
-  .info-strip { flex-direction: column; }
-  .info-cell { border-right: none; border-bottom: 1px solid var(--border); margin-left: 0; }
+/* ─── TABLES ─── */
+.tbl-wrap { overflow-x: auto; }
+table { width:100%; border-collapse:collapse; }
+th {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--green);
+  text-align: left;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,255,136,.03);
+}
+td {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 14px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(30,48,88,.5);
+  color: var(--text);
+}
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: rgba(0,255,136,.03); }
+.mono { font-family: 'Space Mono', monospace; font-size: 12px; }
+.c-green  { color: var(--green); }
+.c-teal   { color: var(--teal2); }
+.c-coral  { color: var(--coral); }
+.c-muted  { color: var(--muted); }
+.c-pink   { color: var(--pink); }
+.empty-row {
+  text-align:center; padding:36px 20px !important;
+  color:var(--muted) !important;
+  font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px;
+}
+
+/* ─── CHART BOXES ─── */
+.chart-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+.chart-box {
+  background: rgba(255,255,255,.02);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 16px;
+}
+.chart-box-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-box-title .dot-t { color: var(--coral); }
+.chart-box-title .dot-h { color: var(--teal2); }
+
+/* ─── PROGRESS ─── */
+.prog-wrap { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.prog-lbl {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.prog-lbl span:last-child { color: var(--green); }
+.prog-track { height:6px; background:rgba(255,255,255,.05); border-radius:3px; overflow:hidden; }
+.prog-fill  {
+  height:6px; background:linear-gradient(90deg, var(--green2), var(--green));
+  border-radius:3px; transition:width 1.2s ease;
+}
+.prog-ticks {
+  display:flex; justify-content:space-between;
+  font-family:'Space Mono',monospace; font-size:8px; color:var(--muted); margin-top:5px;
+}
+
+/* ─── WEEK TILES ─── */
+.tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 8px;
+  padding: 16px;
+}
+.w-tile {
+  background: rgba(255,255,255,.02);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 14px 6px 12px;
+  text-align: center;
+  position: relative;
+  transition: border-color .2s;
+}
+.w-tile.has-data  { border-color: var(--border2); border-top: 2px solid var(--green2); }
+.w-tile.is-today  { background: rgba(0,255,136,.05); border-color: var(--green2); }
+.w-tile.is-future { opacity: .3; }
+.w-tile-badge {
+  position: absolute; top: -1px; left:50%; transform:translateX(-50%);
+  background: var(--green2);
+  color: #000;
+  font-family: 'Space Mono', monospace; font-size:7px; letter-spacing:1px;
+  padding: 2px 8px; border-radius: 0 0 5px 5px; white-space:nowrap;
+}
+.w-tile-day {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing:2px;
+  color: var(--muted); text-transform:uppercase; margin-bottom:10px;
+}
+.w-tile.is-today .w-tile-day { color: var(--green); }
+.w-tile-temp {
+  font-family: 'Orbitron', monospace;
+  font-size: 20px; font-weight:700;
+  color: var(--coral); line-height:1;
+}
+.w-tile-hum  { font-family:'Space Mono',monospace; font-size:11px; color:var(--teal2); margin-top:4px; }
+.w-tile-cnt  { font-family:'Space Mono',monospace; font-size:8px; color:var(--muted); margin-top:5px; }
+.w-tile-dash { font-size:18px; color:var(--border); margin-top:8px; }
+
+/* ─── HOURLY TABLE ─── */
+.hour-table-wrap { padding: 0 20px 20px; }
+.hour-section-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing:2px; text-transform:uppercase;
+  color: var(--muted); padding: 12px 0 6px;
+  border-bottom: 1px solid var(--border); margin-bottom:4px;
+}
+
+/* ─── TEAM ─── */
+.team-grid { display:grid; grid-template-columns:repeat(3,1fr); }
+.team-card {
+  display:flex; align-items:center; gap:14px; padding:18px 20px;
+  border-right:1px solid var(--border); transition:background .15s;
+}
+.team-card:last-child { border-right:none; }
+.team-card:hover { background:rgba(0,255,136,.04); }
+.team-av {
+  width:40px; height:40px; border-radius:10px; flex-shrink:0;
+  background:linear-gradient(135deg,rgba(0,255,136,.15),rgba(0,212,200,.1));
+  border:1px solid var(--green2);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:var(--green);
+}
+.team-nm { font-weight:600; font-size:14px; color:var(--text); }
+.team-rl { font-size:12px; color:var(--muted); margin-top:2px; }
+
+/* ─── DOWNLOAD BTN ─── */
+.dl-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px; letter-spacing:2px; text-transform:uppercase;
+  padding: 10px 24px; border-radius:6px; cursor:pointer;
+  border: 1px solid var(--green2);
+  background: rgba(0,255,136,.1); color: var(--green);
+  transition:all .15s; display:inline-flex; align-items:center; gap:8px;
+  margin:16px 20px;
+}
+.dl-btn:hover { background:rgba(0,255,136,.2); box-shadow:var(--glow-g); }
+
+/* ─── THINGSPEAK CARDS ─── */
+.ts-card {
+  background: #0f1f44;
+  border: 1px solid #1e3060;
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.ts-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 20px; border-bottom:1px solid #1e3060;
+  background:rgba(255,255,255,.02);
+}
+.ts-title { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; color:#8ab4d4; text-transform:uppercase; }
+.ts-link {
+  font-family:'Space Mono',monospace; font-size:9px; letter-spacing:1px;
+  color:#5bb8d4; text-decoration:none;
+  border:1px solid #2a4080; padding:4px 12px; border-radius:5px;
+  transition:all .15s;
+}
+.ts-link:hover { background:rgba(91,184,212,.1); }
+
+/* ─── SPIN ─── */
+.spin {
+  display:inline-block; width:11px; height:11px;
+  border:1.5px solid var(--border); border-top-color:var(--green);
+  border-radius:50%; animation:rot .7s linear infinite;
+  vertical-align:middle; margin-right:6px;
+}
+@keyframes rot { to{transform:rotate(360deg)} }
+
+/* ─── FOOTER ─── */
+footer {
+  border-top:1px solid var(--border); padding-top:20px; margin-top:20px;
+  font-family:'Space Mono',monospace; font-size:10px; color:var(--muted);
+  text-align:center; letter-spacing:2px;
+}
+footer a { color:var(--green2); text-decoration:none; }
+
+/* ─── RESPONSIVE ─── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.mb-4 { margin-bottom:16px; }
+.mb-5 { margin-bottom:20px; }
+
+@media(max-width:768px){
+  .hero-grid { grid-template-columns:repeat(2,1fr); }
+  .grid-2    { grid-template-columns:1fr; }
+  .chart-pair{ grid-template-columns:1fr; }
+  .tiles-grid{ grid-template-columns:repeat(4,1fr); }
+  .team-grid { grid-template-columns:1fr; }
+  .team-card { border-right:none; border-bottom:1px solid var(--border); }
 }
 </style>
 </head>
 <body>
-
-<!-- ═══ TOPBAR ═══════════════════════════════════════════ -->
-<nav class="topbar">
-  <div class="topbar-brand">
-    <div class="topbar-logo">CLIMALOG</div>
-    <div class="topbar-sep"></div>
-    <div class="topbar-sub">ESP32 · DHT11 · WEEKLY LOGGER</div>
-  </div>
-  <div class="topbar-right">
-    <div class="status-pill">
-      <span class="dot dot-wait" id="sDot"></span>
-      <span id="sLabel" style="color:rgba(255,255,255,.6)">CONNECTING…</span>
-    </div>
-  </div>
-</nav>
-
-<!-- ═══ PAGE ══════════════════════════════════════════════ -->
 <div class="page">
 
-  <!-- Page header -->
-  <div class="page-hdr">
-    <div class="page-hdr-left">
-      <h1>Climate Monitor</h1>
-      <p>Tijuana, MX — Sensor station TLAQ · Channel #3284038</p>
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="moon"></div>
+    <div class="site-title">ESP32 <span class="hl">DHT</span> Monitor</div>
+    <div class="site-subtitle">Real-Time Environmental Monitoring System</div>
+  </header>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-pill">
+      <span class="dot dot-wait" id="sDot"></span>
+      <span id="sLabel" style="color:var(--text2)">CONNECTING...</span>
     </div>
-    <div class="clock-box">
-      <div class="clock-time" id="clock">--:--:--</div>
-      <div class="clock-date" id="dateDisp">— — —</div>
+    <div class="status-pill" style="color:var(--muted)">
+      Last update: <span id="lastUpd" style="color:var(--text)">—</span>
+      &nbsp;·&nbsp; <span id="feedAge">—</span>
+    </div>
+    <button class="sbtn" onclick="fetchData()">&#8635; REFRESH</button>
+  </div>
+
+  <!-- HERO CARDS -->
+  <div class="hero-grid mb-5">
+    <!-- Date & Time -->
+    <div class="hero-card">
+      <span class="hero-icon">&#128336;</span>
+      <div class="hero-label">Date &amp; Time</div>
+      <div id="heroDate" style="font-family:'Space Mono',monospace;font-size:13px;color:var(--text);line-height:1.7">
+        —<br>—<br>—
+      </div>
+    </div>
+    <!-- Temperature -->
+    <div class="hero-card">
+      <span class="hero-icon">&#127777;</span>
+      <div class="hero-label">Temperature</div>
+      <div class="hero-val c-coral" id="hTemp">--.-<span style="font-size:16px">°C</span></div>
+      <div id="hTempStatus"></div>
+    </div>
+    <!-- Humidity -->
+    <div class="hero-card">
+      <span class="hero-icon">&#128167;</span>
+      <div class="hero-label">Humidity</div>
+      <div class="hero-val c-teal" id="hHum">--.-<span style="font-size:16px">%</span></div>
+      <div id="hHumStatus"></div>
+    </div>
+    <!-- Today Max -->
+    <div class="hero-card">
+      <span class="hero-icon" style="color:var(--coral)">&#9650;</span>
+      <div class="hero-label">Today Max</div>
+      <div class="hero-val c-coral" id="hTmax">--<span style="font-size:14px">°C</span></div>
+      <div class="hero-sub"><span class="up" id="hHmax">-- %</span></div>
+    </div>
+    <!-- Today Min -->
+    <div class="hero-card">
+      <span class="hero-icon" style="color:var(--teal2)">&#9660;</span>
+      <div class="hero-label">Today Min</div>
+      <div class="hero-val c-teal" id="hTmin">--<span style="font-size:14px">°C</span></div>
+      <div class="hero-sub"><span class="down" id="hHmin">-- %</span></div>
     </div>
   </div>
 
-  <!-- Info strip -->
-  <div class="info-strip">
-    <div class="info-cell">
-      <div class="info-cell-label">Last reading</div>
-      <div class="info-cell-val" id="lastUpd">—</div>
-    </div>
-    <div class="info-cell">
-      <div class="info-cell-label">Updated</div>
-      <div class="info-cell-val" id="feedAge">—</div>
-    </div>
-    <div class="info-cell">
-      <div class="info-cell-label">Channel</div>
-      <div class="info-cell-val">THINGSPEAK #3284038</div>
-    </div>
-    <div class="info-cell">
-      <div class="info-cell-label">Auto-refresh</div>
-      <div class="info-cell-val">EVERY 5 MIN</div>
-    </div>
-    <div class="info-cell" style="margin-left:auto;">
-      <div class="info-cell-label">&nbsp;</div>
-      <button class="btn btn-primary" onclick="fetchData()">↺ Refresh</button>
-    </div>
+  <!-- HOURLY CHARTS -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-icon"></div>
+    <div class="sec-hdr-title">Hourly Charts</div>
+    <div class="sec-hdr-line"></div>
   </div>
-
-  <!-- Live readings -->
-  <div class="section-label">Live Readings</div>
-  <div class="grid-2 mb-5">
-    <div class="reading-card temp-card">
-      <div class="reading-label">
-        Temperature
-        <span class="reading-badge badge-coral">FIELD 01</span>
+  <div class="s-card mb-5">
+    <div class="chart-pair">
+      <div class="chart-box">
+        <div class="chart-box-title"><span class="dot-t">&#9135;</span> TEMPERATURE &middot; LAST 6H</div>
+        <canvas id="cTline" height="200"></canvas>
       </div>
-      <div style="display:flex;align-items:baseline;gap:4px">
-        <div class="reading-value" id="tVal">--.-</div>
-        <span class="reading-unit">°C</span>
-      </div>
-      <div class="reading-bar">
-        <div class="reading-bar-fill" id="tBar" style="width:0%"></div>
-      </div>
-      <div class="reading-status">
-        <span class="dot dot-wait" id="tDot"></span>
-        <span id="tStatus">Waiting for signal…</span>
-      </div>
-    </div>
-    <div class="reading-card hum-card">
-      <div class="reading-label">
-        Relative Humidity
-        <span class="reading-badge badge-teal">FIELD 02</span>
-      </div>
-      <div style="display:flex;align-items:baseline;gap:4px">
-        <div class="reading-value" id="hVal">--.-</div>
-        <span class="reading-unit" style="color:var(--teal)">%</span>
-      </div>
-      <div class="reading-bar">
-        <div class="reading-bar-fill" id="hBar" style="width:0%"></div>
-      </div>
-      <div class="reading-status">
-        <span class="dot dot-wait" id="hDot"></span>
-        <span id="hStatus">Waiting for signal…</span>
+      <div class="chart-box">
+        <div class="chart-box-title"><span class="dot-h">&#128167;</span> HUMIDITY &middot; LAST 6H</div>
+        <canvas id="cHline" height="200"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Weekly stats -->
-  <div class="section-label">Weekly Statistics</div>
-  <div class="grid-4 mb-5">
-    <div class="stat-card">
-      <div class="stat-value c-coral" id="stTMx">--</div>
-      <div class="stat-label">Max Temp</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value c-teal" id="stTMn">--</div>
-      <div class="stat-label">Min Temp</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value c-teal" id="stHMx">--</div>
-      <div class="stat-label">Max Humidity</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value c-navy" id="stHMn">--</div>
-      <div class="stat-label">Min Humidity</div>
-    </div>
+  <!-- WEEKLY CHARTS -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-icon"></div>
+    <div class="sec-hdr-title">Weekly Charts</div>
+    <div class="sec-hdr-line"></div>
   </div>
-
-  <!-- Today's records -->
-  <div class="section-label">Today's Log</div>
-  <div class="card mb-5">
-    <div class="card-head">
-      <div class="card-title">
-        <div class="card-title-icon icon-teal">📋</div>
-        Today's Records
-      </div>
-      <span class="card-meta" id="todayMeta">0 / 8 records</span>
-    </div>
-    <div class="prog-wrap">
-      <div class="prog-label">
-        <span>Daily progress</span>
-        <span id="progPct">0%</span>
-      </div>
-      <div class="prog-track">
-        <div class="prog-fill" id="dayBar" style="width:0%"></div>
-      </div>
-      <div class="prog-ticks">
-        <span>00h</span><span>03h</span><span>06h</span><span>09h</span>
-        <span>12h</span><span>15h</span><span>18h</span><span>21h</span><span>24h</span>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>#</th><th>Time</th><th>Temperature</th><th>Humidity</th></tr>
-        </thead>
-        <tbody id="todayBody">
-          <tr><td colspan="4" class="empty-row"><span class="spin"></span>Loading today's records…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Weekly tiles -->
-  <div class="section-label">Weekly Overview</div>
-  <div class="card mb-5">
-    <div class="card-head">
-      <div class="card-title">
-        <div class="card-title-icon icon-coral">📅</div>
-        7-Day Summary
-      </div>
-      <span class="card-meta" id="weekMeta">—</span>
-    </div>
-    <div style="padding:16px">
-      <div class="grid-7" id="tiles"><!-- JS --></div>
-    </div>
-  </div>
-
-  <!-- Charts — OUR custom bar charts -->
-  <div class="section-label">Bar Charts — Daily Averages (This Week)</div>
-  <div class="space-panel mb-5">
-    <div class="space-panel-header">
-      <span class="space-icon">&#9636;</span>
-      <span class="space-title">WEEKLY CHARTS</span>
-    </div>
-    <div class="grid-2" style="padding:20px;gap:20px">
-      <div class="space-chart-box">
-        <div class="space-chart-label">
-          <span style="color:#e88080">&#x2139;</span>
-          TEMPERATURE &middot; CURRENT WEEK
-        </div>
+  <div class="s-card mb-5">
+    <div class="chart-pair">
+      <div class="chart-box">
+        <div class="chart-box-title"><span class="dot-t">&#9135;</span> TEMPERATURE &middot; CURRENT WEEK</div>
         <canvas id="cT" height="220"></canvas>
       </div>
-      <div class="space-chart-box">
-        <div class="space-chart-label">
-          <span style="color:#5bb8d4">&#x1F4A7;</span>
-          HUMIDITY &middot; CURRENT WEEK
-        </div>
+      <div class="chart-box">
+        <div class="chart-box-title"><span class="dot-h">&#128167;</span> HUMIDITY &middot; CURRENT WEEK</div>
         <canvas id="cH" height="220"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Combined chart: temp + humidity overlay -->
-  <div class="section-label">Trend — Temperature &amp; Humidity Combined</div>
-  <div class="space-panel mb-5">
-    <div class="space-panel-header">
-      <span class="space-icon">&#9650;</span>
-      <span class="space-title">WEEKLY TREND &middot; ALL RECORDS</span>
+  <!-- HOURLY AVERAGES TABLE -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-icon"></div>
+    <div class="sec-hdr-title">Hourly Averages</div>
+    <div class="sec-hdr-line"></div>
+  </div>
+  <div class="s-card mb-5">
+    <div class="s-card-head">
+      <div class="s-card-title">&#9679; Last 8 Recorded Hours (today)</div>
+      <span class="s-card-meta" id="hourlyMeta">—</span>
     </div>
-    <div style="padding:20px">
-      <div class="space-chart-box">
-        <canvas id="cLine" height="180"></canvas>
+    <div class="prog-wrap">
+      <div class="prog-lbl">
+        <span>Daily progress</span>
+        <span id="progPct">0 / 8</span>
       </div>
+      <div class="prog-track"><div class="prog-fill" id="dayBar" style="width:0%"></div></div>
+      <div class="prog-ticks">
+        <span>00h</span><span>03h</span><span>06h</span><span>09h</span>
+        <span>12h</span><span>15h</span><span>18h</span><span>21h</span><span>24h</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Hour</th><th>Temp °C</th><th>Hum %</th></tr></thead>
+        <tbody id="hourlyBody">
+          <tr><td colspan="4" class="empty-row"><span class="spin"></span>Loading hourly records...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ThingSpeak embed -->
-  <div class="section-label">ThingSpeak Live Charts</div>
-  <div class="grid-2 mb-5">
-    <div class="card ts-dark-card">
-      <div class="card-head ts-dark-head">
-        <div class="card-title" style="color:#e8f4ff">
-          <div class="card-title-icon" style="background:rgba(220,80,80,.2)">🌡</div>
-          Temperature — ThingSpeak
-        </div>
-        <a class="btn ts-btn-ghost" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
-      </div>
-      <div style="padding:0 16px 16px;background:#1a2744">
-        <iframe width="100%" height="280" style="border:none;border-radius:8px;display:block"
-          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%231a2744&color=%23dc5050&dynamic=true&results=30&type=line&update=15&title=Measure+Weather&yaxislabel=Temperature&xaxislabel=Date">
-        </iframe>
-      </div>
-    </div>
-    <div class="card ts-dark-card">
-      <div class="card-head ts-dark-head">
-        <div class="card-title" style="color:#e8f4ff">
-          <div class="card-title-icon" style="background:rgba(91,184,212,.2)">💧</div>
-          Humidity — ThingSpeak
-        </div>
-        <a class="btn ts-btn-ghost" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
-      </div>
-      <div style="padding:0 16px 16px;background:#1a2744">
-        <iframe width="100%" height="280" style="border:none;border-radius:8px;display:block"
-          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%231a2744&color=%235bb8d4&dynamic=true&results=30&type=line&update=15&title=Measure+Weather&yaxislabel=Humidity&xaxislabel=Date">
-        </iframe>
-      </div>
-    </div>
+  <!-- CURRENT WEEK TABLE -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-icon"></div>
+    <div class="sec-hdr-title">Current Week</div>
+    <div class="sec-hdr-line"></div>
   </div>
-
-  <!-- Daily averages table -->
-  <div class="section-label">Daily Averages Table</div>
-  <div class="card mb-5">
-    <div class="card-head">
-      <div class="card-title"><div class="card-title-icon icon-teal">📊</div>Weekly Averages</div>
-      <button class="btn" onclick="downloadCSV()">⬇ Download CSV</button>
+  <div class="s-card mb-5">
+    <div class="s-card-head">
+      <div class="s-card-title">&#9679; Week of <span id="weekOf">—</span></div>
+      <span class="s-card-meta" id="weekMeta">—</span>
     </div>
-    <div class="table-wrap">
+    <!-- 7-day tile summary -->
+    <div class="tiles-grid" id="tiles"></div>
+    <!-- Daily averages table -->
+    <div class="tbl-wrap" style="padding:0 16px 0">
       <table>
         <thead>
           <tr>
@@ -916,110 +665,149 @@ footer a:hover { text-decoration: underline; }
           </tr>
         </thead>
         <tbody id="weekTb">
-          <tr><td colspan="8" class="empty-row"><span class="spin"></span>Loading…</td></tr>
+          <tr><td colspan="8" class="empty-row"><span class="spin"></span>Loading...</td></tr>
         </tbody>
       </table>
     </div>
+    <button class="dl-btn" onclick="downloadCSV()">&#8595; DOWNLOAD CSV</button>
   </div>
 
-  <!-- Team -->
-  <div class="section-label">Project Team</div>
-  <div class="card mb-5">
+  <!-- THINGSPEAK LIVE CHARTS -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-icon"></div>
+    <div class="sec-hdr-title">ThingSpeak Live</div>
+    <div class="sec-hdr-line"></div>
+  </div>
+  <div class="grid-2 mb-5">
+    <div class="ts-card">
+      <div class="ts-head">
+        <span class="ts-title">&#127777; Temperature</span>
+        <a class="ts-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open &#8599;</a>
+      </div>
+      <div style="background:#1a2744;padding:0 16px 16px">
+        <iframe width="100%" height="260" style="border:none;border-radius:8px;display:block;margin-top:16px"
+          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%231a2744&color=%23dc5050&dynamic=true&results=30&type=line&update=15&title=Measure+Weather&yaxislabel=Temperature&xaxislabel=Date">
+        </iframe>
+      </div>
+    </div>
+    <div class="ts-card">
+      <div class="ts-head">
+        <span class="ts-title">&#128167; Humidity</span>
+        <a class="ts-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open &#8599;</a>
+      </div>
+      <div style="background:#1a2744;padding:0 16px 16px">
+        <iframe width="100%" height="260" style="border:none;border-radius:8px;display:block;margin-top:16px"
+          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%231a2744&color=%235bb8d4&dynamic=true&results=30&type=line&update=15&title=Measure+Weather&yaxislabel=Humidity&xaxislabel=Date">
+        </iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-icon"></div>
+    <div class="sec-hdr-title">Project Team</div>
+    <div class="sec-hdr-line"></div>
+  </div>
+  <div class="s-card mb-5">
     <div class="team-grid">
       <div class="team-card">
-        <div class="team-avatar">MV</div>
-        <div>
-          <div class="team-name">Mauricio Vela</div>
-          <div class="team-role">Lead Developer</div>
-        </div>
+        <div class="team-av">MV</div>
+        <div><div class="team-nm">Mauricio Vela</div><div class="team-rl">Lead Developer</div></div>
       </div>
       <div class="team-card">
-        <div class="team-avatar">CC</div>
-        <div>
-          <div class="team-name">Carlos Cayetano</div>
-          <div class="team-role">Collaborator</div>
-        </div>
+        <div class="team-av">CC</div>
+        <div><div class="team-nm">Carlos Cayetano</div><div class="team-rl">Collaborator</div></div>
       </div>
       <div class="team-card">
-        <div class="team-avatar">DL</div>
-        <div>
-          <div class="team-name">Daniel Lopez</div>
-          <div class="team-role">Collaborator</div>
-        </div>
+        <div class="team-av">DL</div>
+        <div><div class="team-nm">Daniel Lopez</div><div class="team-rl">Collaborator</div></div>
       </div>
     </div>
   </div>
 
   <footer>
-    CLIMALOG · ESP32 + DHT11 ·
-    <a href="https://thingspeak.com/channels/3284038" target="_blank">THINGSPEAK</a> ·
+    CLIMALOG &middot; ESP32 + DHT11 &middot;
+    <a href="https://thingspeak.com/channels/3284038" target="_blank">THINGSPEAK</a> &middot;
     <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a>
   </footer>
 
 </div><!-- /page -->
 
-<!-- ═══ JAVASCRIPT ════════════════════════════════════════ -->
 <script>
-// ─── CONFIG ────────────────────────────────────────────────
-const CH_ID   = "3284038";
-const RD_KEY  = "IV68XDIEZ0KAVM7N";
-const RESULTS = 56;
-const TZ      = "America/Tijuana";
-const OFFLINE_SEC = 10800 * 1.5;   // 4.5 h
-const TICK_MS = 5 * 60 * 1000;     // 5 min auto-refresh
+/* ============================================================
+   CLIMALOG — Dashboard JS
+   ThingSpeak fields:
+     field1 = Temperature
+     field2 = Humidity
+     field3 = WeekDay (1=Mon...7=Sun)  sent by ESP32
+     field4 = Record number of day (1-8)
+   ============================================================ */
+const CH_ID      = "3284038";
+const RD_KEY     = "IV68XDIEZ0KAVM7N";
+const RESULTS    = 56;
+const TZ         = "America/Tijuana";
+const OFFLINE_S  = 10800 * 1.5;
+const TICK_MS    = 5 * 60 * 1000;
 
-// ─── CONSTANTS ─────────────────────────────────────────────
 const DAYS_LONG  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DAYS_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 const MONTHS     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const WEEK_JS    = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const WJS        = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-let feeds = [];
+let feeds  = [];
 let charts = {};
 
-// ─── CLOCK ─────────────────────────────────────────────────
+/* ── CLOCK ── */
 function tick() {
   const d = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
   const p = n => String(n).padStart(2,'0');
-  document.getElementById('clock').textContent =
-    `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-  document.getElementById('dateDisp').textContent =
-    `${WEEK_JS[d.getDay()].toUpperCase()} · ${p(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h % 12 || 12;
+  document.getElementById('heroDate').innerHTML =
+    `${WJS[d.getDay()]}<br>${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}<br>${h12}:${p(m)}:${p(s)} ${ampm}`;
 }
 tick(); setInterval(tick, 1000);
 
-// ─── HELPERS ───────────────────────────────────────────────
+/* ── HELPERS ── */
 const toLoc   = s => new Date(new Date(s).toLocaleString('en-US', { timeZone: TZ }));
 const p2      = n => String(n).padStart(2,'0');
 const fmtTime = s => { const d=toLoc(s); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
-const fmtDT   = s => { const d=toLoc(s); return `${p2(d.getDate())}/${p2(d.getMonth()+1)} ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+const fmtDT   = s => { const d=toLoc(s); return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`; };
 const ago     = s => {
-  const sec = Math.floor((Date.now() - new Date(s)) / 1000);
-  if (sec < 60)   return `${sec}s ago`;
-  if (sec < 3600) return `${Math.floor(sec/60)} min ago`;
-  return `${Math.floor(sec/3600)}h ${Math.floor((sec%3600)/60)}m ago`;
+  const sec = Math.floor((Date.now()-new Date(s))/1000);
+  if (sec<60)   return sec+'s ago';
+  if (sec<3600) return Math.floor(sec/60)+' min ago';
+  return Math.floor(sec/3600)+'h '+Math.floor((sec%3600)/60)+'m ago';
 };
 const todayWD = () => { const d=new Date(new Date().toLocaleString('en-US',{timeZone:TZ})); return d.getDay()===0?7:d.getDay(); };
 const avg     = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+const isoWeekStart = () => {
+  const now = new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
+  const wd  = now.getDay() || 7;
+  const mon = new Date(now);
+  mon.setDate(now.getDate()-wd+1);
+  return `${p2(mon.getMonth()+1)}/${p2(mon.getDate())}/${mon.getFullYear()}`;
+};
 
-// ─── STATUS ────────────────────────────────────────────────
+/* ── STATUS ── */
 function setSensor(state, label) {
-  // state: 'on' | 'off' | 'wait'
   const dot = document.getElementById('sDot');
-  dot.className = `dot dot-${state}`;
+  dot.className = 'dot dot-'+state;
   const el = document.getElementById('sLabel');
   el.textContent = label;
-  el.style.color = state==='on' ? '#86efac' : state==='off' ? '#fca5a5' : 'rgba(255,255,255,.6)';
+  el.style.color = state==='on' ? 'var(--green)' : state==='off' ? 'var(--pink)' : 'var(--text2)';
 }
 
-// ─── GROUP BY DAY ──────────────────────────────────────────
+/* ── GROUP BY DAY ── */
 function byDay(arr) {
   const r = {};
   arr.forEach(f => {
     const d = parseInt(f.field3);
-    if (isNaN(d) || d < 1 || d > 7) return;
+    if (isNaN(d)||d<1||d>7) return;
     if (!r[d]) r[d] = { t:[], h:[], feeds:[] };
-    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
+    const tv=parseFloat(f.field1), hv=parseFloat(f.field2);
     if (!isNaN(tv)) r[d].t.push(tv);
     if (!isNaN(hv)) r[d].h.push(hv);
     r[d].feeds.push(f);
@@ -1027,362 +815,302 @@ function byDay(arr) {
   return r;
 }
 
-// ─── RENDER: TODAY ─────────────────────────────────────────
-function renderToday(bd) {
+/* ── RENDER: HERO CARDS ── */
+function renderHero(tv, hv, bd) {
+  document.getElementById('hTemp').innerHTML = tv.toFixed(1)+'<span style="font-size:16px">°C</span>';
+  document.getElementById('hHum').innerHTML  = hv.toFixed(1)+'<span style="font-size:16px">%</span>';
+
+  // online badge under temperature
+  document.getElementById('hTempStatus').innerHTML =
+    '<div class="online-badge"><span class="dot dot-on" style="width:6px;height:6px"></span>Online</div>';
+
+  // Today max/min
+  const dh = todayWD();
+  const dt = bd[dh];
+  if (dt && dt.t.length) {
+    const maxT=Math.max(...dt.t), minT=Math.min(...dt.t);
+    const maxH=Math.max(...dt.h), minH=Math.min(...dt.h);
+    document.getElementById('hTmax').innerHTML = maxT.toFixed(1)+'<span style="font-size:14px">°C</span>';
+    document.getElementById('hTmin').innerHTML = minT.toFixed(1)+'<span style="font-size:14px">°C</span>';
+    document.getElementById('hHmax').textContent = '▲ '+maxH.toFixed(1)+' %';
+    document.getElementById('hHmin').textContent = '▼ '+minH.toFixed(1)+' %';
+  }
+}
+
+/* ── RENDER: HOURLY TABLE (today's records only, up to 8) ── */
+function renderHourly(bd) {
   const dh  = todayWD();
-  const reg = bd[dh]?.feeds || [];
+  const reg = (bd[dh] && bd[dh].feeds) ? bd[dh].feeds : [];
   const n   = reg.length;
   const pct = Math.min(100, (n/8)*100).toFixed(0);
-  document.getElementById('dayBar').style.width = pct + '%';
-  document.getElementById('progPct').textContent = pct + '%';
-  document.getElementById('todayMeta').textContent =
-    `${n} / 8 records · ${DAYS_LONG[dh-1]} · ${pct}% complete`;
-  const tb = document.getElementById('todayBody');
+  document.getElementById('dayBar').style.width = pct+'%';
+  document.getElementById('progPct').textContent = n+' / 8 records';
+  document.getElementById('hourlyMeta').textContent =
+    DAYS_LONG[dh-1]+' · '+pct+'% complete';
+
+  const tb = document.getElementById('hourlyBody');
   tb.innerHTML = '';
   if (!n) {
     tb.innerHTML = '<tr><td colspan="4" class="empty-row">No records for today yet</td></tr>';
     return;
   }
-  reg.forEach((f, i) => {
-    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
-    const tClass = tv>30 ? 'c-coral' : tv<18 ? 'c-teal' : '';
+  // Show most recent first
+  const sorted = [...reg].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  sorted.forEach((f, i) => {
+    const tv=parseFloat(f.field1), hv=parseFloat(f.field2);
+    const tc = tv>30?'c-coral':tv<18?'c-teal':'';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="mono c-muted">${i+1}</td>
+      <td class="mono c-muted">${sorted.length-i}</td>
       <td class="mono">${fmtTime(f.created_at)}</td>
-      <td class="mono ${tClass}">${isNaN(tv)?'—':tv.toFixed(1)+' °C'}</td>
-      <td class="mono c-teal">${isNaN(hv)?'—':hv.toFixed(1)+' %'}</td>`;
+      <td class="mono ${tc}">${isNaN(tv)?'—':tv.toFixed(1)}</td>
+      <td class="mono c-teal">${isNaN(hv)?'—':hv.toFixed(1)}</td>`;
     tb.appendChild(tr);
   });
 }
 
-// ─── RENDER: TILES ─────────────────────────────────────────
+/* ── RENDER: WEEKLY TILES ── */
 function renderTiles(bd) {
-  const dh   = todayWD();
-  const now  = new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
-  const wd   = now.getDay() || 7;
-  const mon  = new Date(now); mon.setDate(now.getDate()-wd+1);
-  const sun  = new Date(now); sun.setDate(now.getDate()-wd+7);
+  const dh  = todayWD();
+  const now = new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
+  const wd  = now.getDay()||7;
+  const mon = new Date(now); mon.setDate(now.getDate()-wd+1);
+  const sun = new Date(now); sun.setDate(now.getDate()-wd+7);
+  document.getElementById('weekOf').textContent =
+    p2(mon.getMonth()+1)+'/'+p2(mon.getDate())+'/'+mon.getFullYear();
   document.getElementById('weekMeta').textContent =
-    `${p2(mon.getDate())} ${MONTHS[mon.getMonth()]} — ${p2(sun.getDate())} ${MONTHS[sun.getMonth()]} ${sun.getFullYear()}`;
+    p2(mon.getDate())+' '+MONTHS[mon.getMonth()]+' — '+p2(sun.getDate())+' '+MONTHS[sun.getMonth()]+' '+sun.getFullYear();
 
   const wrap = document.getElementById('tiles');
   wrap.innerHTML = '';
-  for (let d = 1; d <= 7; d++) {
-    const data = bd[d];
-    const isToday  = d === dh;
-    const isFuture = d > dh;
-    const hasData  = data && data.t.length;
-    const avgT = hasData ? avg(data.t).toFixed(1) : null;
-    const avgH = hasData ? avg(data.h).toFixed(1) : null;
+  for (let d=1; d<=7; d++) {
+    const data    = bd[d];
+    const isToday = d===dh;
+    const isFut   = d>dh;
+    const hasDat  = data && data.t.length;
+    const avgT    = hasDat ? avg(data.t).toFixed(1) : null;
+    const avgH    = hasDat ? avg(data.h).toFixed(1) : null;
 
     const tile = document.createElement('div');
-    tile.className = 'tile'
-      + (hasData  ? ' t-has-data' : '')
-      + (isToday  ? ' t-today'    : '')
-      + (isFuture ? ' t-future'   : '');
-    tile.innerHTML = `
-      ${isToday ? '<div class="tile-today-badge">TODAY</div>' : ''}
-      <div class="tile-day">${DAYS_SHORT[d-1]}</div>
-      ${avgT !== null
-        ? `<div class="tile-temp">${avgT}°</div>
-           <div class="tile-hum">${avgH}%</div>
-           <div class="tile-count">${data.t.length}/8</div>`
-        : `<div class="tile-dash">${isFuture ? '···' : '—'}</div>`
-      }`;
+    tile.className = 'w-tile'+(hasDat?' has-data':'')+(isToday?' is-today':'')+(isFut?' is-future':'');
+    tile.innerHTML =
+      (isToday?'<div class="w-tile-badge">TODAY</div>':'')+
+      '<div class="w-tile-day">'+DAYS_SHORT[d-1]+'</div>'+
+      (avgT!==null
+        ? '<div class="w-tile-temp">'+avgT+'°</div>'+
+          '<div class="w-tile-hum">'+avgH+'%</div>'+
+          '<div class="w-tile-cnt">'+data.t.length+'/8</div>'
+        : '<div class="w-tile-dash">'+(isFut?'···':'—')+'</div>');
     wrap.appendChild(tile);
   }
 }
 
-// ─── RENDER: WEEKLY TABLE ──────────────────────────────────
+/* ── RENDER: WEEKLY TABLE ── */
 function renderWeekTable(bd) {
   const dh = todayWD();
   const tb = document.getElementById('weekTb');
   tb.innerHTML = '';
   let any = false;
-  for (let d = 1; d <= 7; d++) {
-    const dt = bd[d];
-    const isToday  = d === dh;
-    const isFuture = d > dh;
-    const tr = document.createElement('tr');
-    if (!dt || !dt.t.length) {
-      tr.innerHTML = `
-        <td style="font-weight:${isToday?600:400};color:${isToday?'var(--teal-dk)':''}">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
-        <td class="c-muted" colspan="7">${isFuture?'Pending':'—'}</td>`;
+  for (let d=1; d<=7; d++) {
+    const dt=bd[d], isToday=d===dh, isFut=d>dh;
+    const tr=document.createElement('tr');
+    if (!dt||!dt.t.length) {
+      tr.innerHTML = `<td style="color:${isToday?'var(--green)':''};font-weight:${isToday?600:400}">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td><td class="c-muted" colspan="7">${isFut?'Pending':'—'}</td>`;
     } else {
-      any = true;
+      any=true;
       const t=dt.t, h=dt.h;
       const avgT=avg(t).toFixed(1), maxT=Math.max(...t).toFixed(1), minT=Math.min(...t).toFixed(1);
       const avgH=avg(h).toFixed(1), maxH=Math.max(...h).toFixed(1), minH=Math.min(...h).toFixed(1);
-      const tClass = parseFloat(avgT)>30?'c-coral':parseFloat(avgT)<18?'c-teal':'';
       tr.innerHTML = `
-        <td style="font-weight:600;color:${isToday?'var(--teal-dk)':'var(--navy)'}">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
-        <td class="mono ${tClass}">${avgT}</td>
-        <td class="mono c-coral">${maxT}</td>
+        <td style="color:${isToday?'var(--green)':'var(--text)'};font-weight:600">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
+        <td class="mono c-coral">${avgT}</td>
+        <td class="mono" style="color:var(--coral2)">${maxT}</td>
         <td class="mono c-teal">${minT}</td>
         <td class="mono c-teal">${avgH}</td>
-        <td class="mono">${maxH}</td>
-        <td class="mono">${minH}</td>
+        <td class="mono" style="color:#8fd4e8">${maxH}</td>
+        <td class="mono c-teal">${minH}</td>
         <td class="mono c-muted">${t.length}/8</td>`;
     }
     tb.appendChild(tr);
   }
-  if (!any) tb.innerHTML = '<tr><td colspan="8" class="empty-row">No weekly data yet</td></tr>';
+  if (!any) tb.innerHTML='<tr><td colspan="8" class="empty-row">No weekly data yet</td></tr>';
 }
 
-// ─── RENDER: CHARTS ────────────────────────────────────────
-function renderCharts(bd) {
-  const labels = DAYS_LONG;
-  const tData  = Array.from({length:7}, (_,i) => { const d=bd[i+1]; return d&&d.t.length?+avg(d.t).toFixed(1):null; });
-  const hData  = Array.from({length:7}, (_,i) => { const d=bd[i+1]; return d&&d.h.length?+avg(d.h).toFixed(1):null; });
-
-  const darkOpts = {
-    responsive: true,
-    plugins: {
-      legend: {
-        display: true,
-        labels: { color:'#8ab4d4', font:{family:'Space Mono',size:10}, boxWidth:14, padding:16 }
-      },
-      tooltip: {
-        backgroundColor: '#0a1530',
-        titleColor: '#c8e0f4',
-        bodyColor: '#8ab4d4',
-        padding: 12,
-        cornerRadius: 8,
-        borderWidth: 1,
+/* ── DARK CHART OPTIONS ── */
+function darkOpts(borderC, tooltipBorderC) {
+  return {
+    responsive:true,
+    plugins:{
+      legend:{ labels:{ color:'#8ab4d4', font:{family:'Space Mono',size:10}, boxWidth:14, padding:16 } },
+      tooltip:{
+        backgroundColor:'#0a1530', titleColor:'#c8e0f4', bodyColor:'#8ab4d4',
+        padding:12, cornerRadius:8, borderWidth:1, borderColor: tooltipBorderC||borderC
       }
     },
+    scales:{
+      x:{ ticks:{color:'#5a7a9a',font:{family:'Space Mono',size:8},maxRotation:0}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'} },
+      y:{ ticks:{color:'#5a7a9a',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'}, beginAtZero:false }
+    }
+  };
+}
+
+/* ── RENDER: ALL CHARTS ── */
+function renderCharts(bd) {
+  const dh = todayWD();
+
+  /* ---------- HOURLY LINE CHARTS: last 6 records of today ---------- */
+  const todayFeeds = (bd[dh] && bd[dh].feeds) ? bd[dh].feeds : [];
+  const last6 = [...todayFeeds]
+    .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))
+    .slice(-6);
+  const hLabels = last6.map(f => fmtTime(f.created_at));
+  const hTdata  = last6.map(f => { const v=parseFloat(f.field1); return isNaN(v)?null:+v.toFixed(2); });
+  const hHdata  = last6.map(f => { const v=parseFloat(f.field2); return isNaN(v)?null:+v.toFixed(2); });
+
+  const lineOptsT = {
+    ...darkOpts('rgba(220,130,130,1)'),
     scales: {
-      x: {
-        ticks: { color:'#5a7a9a', font:{family:'Space Mono',size:9}, maxRotation:0 },
-        grid:  { color:'rgba(30,60,100,.4)', lineWidth:1 },
-        border:{ color:'rgba(30,60,100,.6)' }
-      },
-      y: {
-        ticks: { color:'#5a7a9a', font:{family:'Space Mono',size:9} },
-        grid:  { color:'rgba(30,60,100,.4)', lineWidth:1 },
-        border:{ color:'rgba(30,60,100,.6)' },
-        beginAtZero: true
-      }
+      x: darkOpts().scales.x,
+      y: { ...darkOpts().scales.y, ticks:{color:'rgba(220,130,130,.8)',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'} }
+    }
+  };
+  const lineOptsH = {
+    ...darkOpts('rgba(91,184,212,1)'),
+    scales: {
+      x: darkOpts().scales.x,
+      y: { ...darkOpts().scales.y, ticks:{color:'rgba(91,184,212,.8)',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'} }
     }
   };
 
+  if (charts.cTline) charts.cTline.destroy();
+  charts.cTline = new Chart(document.getElementById('cTline'), {
+    type:'line',
+    data:{ labels:hLabels, datasets:[{
+      label:'Temp °C', data:hTdata,
+      borderColor:'rgba(220,130,130,1)', backgroundColor:'rgba(200,80,80,.1)',
+      borderWidth:2, tension:.3, fill:true,
+      pointRadius:4, pointBackgroundColor:'rgba(220,130,130,1)',
+      pointBorderColor:'#1a2744', pointBorderWidth:2
+    }]},
+    options: lineOptsT
+  });
+
+  if (charts.cHline) charts.cHline.destroy();
+  charts.cHline = new Chart(document.getElementById('cHline'), {
+    type:'line',
+    data:{ labels:hLabels, datasets:[{
+      label:'Hum %', data:hHdata,
+      borderColor:'rgba(91,184,212,1)', backgroundColor:'rgba(91,184,212,.1)',
+      borderWidth:2, tension:.3, fill:true,
+      pointRadius:4, pointBackgroundColor:'rgba(91,184,212,1)',
+      pointBorderColor:'#1a2744', pointBorderWidth:2
+    }]},
+    options: lineOptsH
+  });
+
+  /* ---------- WEEKLY BAR CHARTS ---------- */
+  const labels = DAYS_LONG;
+  const tData  = Array.from({length:7},(_,i)=>{ const d=bd[i+1]; return d&&d.t.length?+avg(d.t).toFixed(1):null; });
+  const hData  = Array.from({length:7},(_,i)=>{ const d=bd[i+1]; return d&&d.h.length?+avg(d.h).toFixed(1):null; });
+
+  const barBase = (data, bgColor, borderColor, tooltipBorder) => ({
+    responsive:true,
+    plugins:{
+      legend:{ labels:{ color:'#8ab4d4', font:{family:'Space Mono',size:10}, boxWidth:14 } },
+      tooltip:{ backgroundColor:'#0a1530', titleColor:'#c8e0f4', bodyColor:'#8ab4d4', padding:12, cornerRadius:8, borderWidth:1, borderColor:tooltipBorder }
+    },
+    scales:{
+      x:{ ticks:{color:'#5a7a9a',font:{family:'Space Mono',size:9},maxRotation:0}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'} },
+      y:{ ticks:{color:'#5a7a9a',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'}, beginAtZero:true }
+    }
+  });
+
   if (charts.cT) charts.cT.destroy();
   charts.cT = new Chart(document.getElementById('cT'), {
-    type: 'bar',
-    data: { labels, datasets: [{
-      label: 'Temp C',
-      data: tData,
-      backgroundColor: tData.map(v => v===null ? 'transparent' : 'rgba(200,100,100,.75)'),
-      borderColor:     tData.map(v => v===null ? 'transparent' : 'rgba(220,130,130,1)'),
-      borderWidth: 1,
-      borderRadius: 4,
-      borderSkipped: false,
+    type:'bar',
+    data:{ labels, datasets:[{
+      label:'Temp °C', data:tData,
+      backgroundColor: tData.map(v=>v===null?'transparent':'rgba(200,100,100,.75)'),
+      borderColor:     tData.map(v=>v===null?'transparent':'rgba(220,130,130,1)'),
+      borderWidth:1, borderRadius:4, borderSkipped:false
     }]},
-    options: {
-      ...darkOpts,
-      plugins: { ...darkOpts.plugins,
-        tooltip: { ...darkOpts.plugins.tooltip, borderColor:'rgba(200,100,100,.5)' }
-      }
-    }
+    options: barBase(tData,'rgba(200,100,100,.75)','rgba(220,130,130,1)','rgba(200,100,100,.5)')
   });
 
   if (charts.cH) charts.cH.destroy();
   charts.cH = new Chart(document.getElementById('cH'), {
-    type: 'bar',
-    data: { labels, datasets: [{
-      label: 'Hum %',
-      data: hData,
-      backgroundColor: hData.map(v => v===null ? 'transparent' : 'rgba(91,184,212,.7)'),
-      borderColor:     hData.map(v => v===null ? 'transparent' : 'rgba(120,200,230,1)'),
-      borderWidth: 1,
-      borderRadius: 4,
-      borderSkipped: false,
+    type:'bar',
+    data:{ labels, datasets:[{
+      label:'Hum %', data:hData,
+      backgroundColor: hData.map(v=>v===null?'transparent':'rgba(91,184,212,.7)'),
+      borderColor:     hData.map(v=>v===null?'transparent':'rgba(120,200,230,1)'),
+      borderWidth:1, borderRadius:4, borderSkipped:false
     }]},
-    options: {
-      ...darkOpts,
-      plugins: { ...darkOpts.plugins,
-        tooltip: { ...darkOpts.plugins.tooltip, borderColor:'rgba(91,184,212,.5)' }
-      }
-    }
-  });
-
-  const sorted = [...feeds].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-  const lineLabels = sorted.map(f => fmtTime(f.created_at));
-  const lineT = sorted.map(f => { const v=parseFloat(f.field1); return isNaN(v)?null:+v.toFixed(1); });
-  const lineH = sorted.map(f => { const v=parseFloat(f.field2); return isNaN(v)?null:+v.toFixed(1); });
-
-  if (charts.cLine) charts.cLine.destroy();
-  charts.cLine = new Chart(document.getElementById('cLine'), {
-    type: 'line',
-    data: {
-      labels: lineLabels,
-      datasets: [
-        {
-          label: 'Temperature C',
-          data: lineT,
-          borderColor: 'rgba(220,130,130,1)',
-          backgroundColor: 'rgba(200,80,80,.1)',
-          borderWidth: 2,
-          tension: .3,
-          pointRadius: lineT.length > 20 ? 0 : 3,
-          pointBackgroundColor: 'rgba(220,130,130,1)',
-          fill: true,
-          yAxisID: 'yT',
-        },
-        {
-          label: 'Humidity %',
-          data: lineH,
-          borderColor: 'rgba(91,184,212,1)',
-          backgroundColor: 'rgba(91,184,212,.08)',
-          borderWidth: 2,
-          tension: .3,
-          pointRadius: lineH.length > 20 ? 0 : 3,
-          pointBackgroundColor: 'rgba(91,184,212,1)',
-          fill: true,
-          yAxisID: 'yH',
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { labels: { color:'#8ab4d4', font:{family:'Space Mono',size:9}, boxWidth:12 } },
-        tooltip: {
-          backgroundColor: '#0a1530',
-          titleColor: '#c8e0f4',
-          bodyColor: '#8ab4d4',
-          padding: 12,
-          cornerRadius: 8,
-          borderWidth: 1,
-          borderColor: 'rgba(91,184,212,.3)'
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color:'#5a7a9a', font:{family:'Space Mono',size:8}, maxTicksLimit:14, maxRotation:45 },
-          grid:  { color:'rgba(30,60,100,.4)' },
-          border:{ color:'rgba(30,60,100,.6)' }
-        },
-        yT: {
-          position: 'left',
-          ticks: { color:'rgba(220,130,130,.8)', font:{family:'Space Mono',size:9} },
-          grid:  { color:'rgba(30,60,100,.4)' },
-          border:{ color:'rgba(30,60,100,.6)' },
-          title: { display:true, text:'C', color:'rgba(220,130,130,.7)', font:{family:'Space Mono',size:9} }
-        },
-        yH: {
-          position: 'right',
-          ticks: { color:'rgba(91,184,212,.8)', font:{family:'Space Mono',size:9} },
-          grid:  { drawOnChartArea:false },
-          border:{ color:'rgba(30,60,100,.6)' },
-          title: { display:true, text:'%', color:'rgba(91,184,212,.7)', font:{family:'Space Mono',size:9} }
-        }
-      }
-    }
+    options: barBase(hData,'rgba(91,184,212,.7)','rgba(120,200,230,1)','rgba(91,184,212,.5)')
   });
 }
 
-// ─── FETCH DATA ────────────────────────────────────────────
+/* ── FETCH ── */
 async function fetchData() {
-  setSensor('wait', 'LOADING…');
+  setSensor('wait','LOADING...');
   try {
     const json = await (await fetch(
       `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=${RESULTS}`
     )).json();
     feeds = json.feeds || [];
-    if (!feeds.length) { setSensor('off', 'NO DATA'); return; }
+    if (!feeds.length) { setSensor('off','NO DATA'); return; }
 
-    const last = feeds[feeds.length - 1];
-    const tv   = parseFloat(last.field1), hv = parseFloat(last.field2);
-    const ok   = !isNaN(tv) && !isNaN(hv);
-    const sec  = (Date.now() - new Date(last.created_at)) / 1000;
-    const online = ok && sec <= OFFLINE_SEC;
+    const last  = feeds[feeds.length-1];
+    const tv    = parseFloat(last.field1), hv=parseFloat(last.field2);
+    const ok    = !isNaN(tv)&&!isNaN(hv);
+    const sec   = (Date.now()-new Date(last.created_at))/1000;
+    const online= ok && sec<=OFFLINE_S;
 
-    setSensor(online ? 'on' : 'off',
-      online ? 'SENSOR ONLINE'
-             : `SENSOR OFFLINE · ${sec<60?Math.floor(sec)+'s':sec<3600?Math.floor(sec/60)+'min':Math.floor(sec/3600)+'h'} no signal`);
+    setSensor(online?'on':'off',
+      online?'SENSOR ONLINE':
+        'SENSOR OFFLINE · '+(sec<60?Math.floor(sec)+'s':sec<3600?Math.floor(sec/60)+'min':Math.floor(sec/3600)+'h')+' no signal');
 
     document.getElementById('lastUpd').textContent = fmtDT(last.created_at);
     document.getElementById('feedAge').textContent = ago(last.created_at);
 
-    if (ok) {
-      // Temperature
-      document.getElementById('tVal').textContent = tv.toFixed(1);
-      document.getElementById('tBar').style.width = Math.min(100, Math.max(0, (tv/50)*100)) + '%';
-      const tDot = document.getElementById('tDot');
-      const tStatus = document.getElementById('tStatus');
-      if (tv > 30) { tDot.className='dot dot-off'; tStatus.textContent='▲ High temperature'; }
-      else if (tv < 18) { tDot.className='dot dot-wait'; tStatus.textContent='▼ Low temperature'; }
-      else { tDot.className='dot dot-on'; tStatus.textContent='● Normal temperature'; }
-
-      // Humidity
-      document.getElementById('hVal').textContent = hv.toFixed(1);
-      document.getElementById('hBar').style.width = Math.min(100, Math.max(0, hv)) + '%';
-      const hDot = document.getElementById('hDot');
-      const hStatus = document.getElementById('hStatus');
-      if (hv > 80) { hDot.className='dot dot-off'; hStatus.textContent='▲ Very high humidity'; }
-      else if (hv < 30) { hDot.className='dot dot-wait'; hStatus.textContent='▼ Very low humidity'; }
-      else { hDot.className='dot dot-on'; hStatus.textContent='● Normal humidity'; }
-    }
-
-    // Weekly stats
-    const ts = feeds.map(f=>parseFloat(f.field1)).filter(v=>!isNaN(v));
-    const hs = feeds.map(f=>parseFloat(f.field2)).filter(v=>!isNaN(v));
-    if (ts.length) {
-      document.getElementById('stTMx').textContent = Math.max(...ts).toFixed(1) + '°';
-      document.getElementById('stTMn').textContent = Math.min(...ts).toFixed(1) + '°';
-    }
-    if (hs.length) {
-      document.getElementById('stHMx').textContent = Math.max(...hs).toFixed(1) + '%';
-      document.getElementById('stHMn').textContent = Math.min(...hs).toFixed(1) + '%';
-    }
-
     const bd = byDay(feeds);
-    renderToday(bd);
+
+    if (ok) renderHero(tv, hv, bd);
+    renderHourly(bd);
     renderTiles(bd);
     renderWeekTable(bd);
     renderCharts(bd);
 
   } catch(e) {
     console.error(e);
-    setSensor('off', 'CONNECTION ERROR');
+    setSensor('off','CONNECTION ERROR');
   }
 }
 
-// ─── CSV EXPORT ────────────────────────────────────────────
+/* ── CSV ── */
 function downloadCSV() {
   if (!feeds.length) { alert('No data available.'); return; }
   const bd = byDay(feeds);
-  let csv = 'Day,Avg Temp (°C),Max Temp,Min Temp,Avg Hum (%),Max Hum,Min Hum,Records\n';
-  for (let d = 1; d <= 7; d++) {
-    const dt = bd[d];
-    if (!dt || !dt.t.length) {
-      csv += `"${DAYS_LONG[d-1]}","—","—","—","—","—","—","0"\n`;
-      continue;
-    }
+  let csv = 'Day,Avg Temp (C),Max Temp,Min Temp,Avg Hum (%),Max Hum,Min Hum,Records\n';
+  for (let d=1; d<=7; d++) {
+    const dt=bd[d];
+    if (!dt||!dt.t.length) { csv+=`"${DAYS_LONG[d-1]}","—","—","—","—","—","—","0"\n`; continue; }
     const t=dt.t, h=dt.h;
-    csv += `"${DAYS_LONG[d-1]}","${avg(t).toFixed(1)}","${Math.max(...t).toFixed(1)}","${Math.min(...t).toFixed(1)}","${avg(h).toFixed(1)}","${Math.max(...h).toFixed(1)}","${Math.min(...h).toFixed(1)}","${t.length}"\n`;
+    csv+=`"${DAYS_LONG[d-1]}","${avg(t).toFixed(1)}","${Math.max(...t).toFixed(1)}","${Math.min(...t).toFixed(1)}","${avg(h).toFixed(1)}","${Math.max(...h).toFixed(1)}","${Math.min(...h).toFixed(1)}","${t.length}"\n`;
   }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download = `climalog_${new Date().toISOString().slice(0,10)}.csv`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='climalog_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
 }
 
-// ─── LIVE AGO UPDATE ───────────────────────────────────────
-setInterval(() => {
+/* ── LIVE AGO UPDATE ── */
+setInterval(()=>{
   if (!feeds.length) return;
-  const last = feeds[feeds.length-1];
-  document.getElementById('feedAge').textContent = ago(last.created_at);
-  const sec = (Date.now()-new Date(last.created_at))/1000;
-  const tv=parseFloat(last.field1), hv=parseFloat(last.field2);
-  if (isNaN(tv)||isNaN(hv)||sec>OFFLINE_SEC)
-    setSensor('off', `SENSOR OFFLINE · ${sec<60?Math.floor(sec)+'s':sec<3600?Math.floor(sec/60)+'min':Math.floor(sec/3600)+'h'} no signal`);
+  document.getElementById('feedAge').textContent = ago(feeds[feeds.length-1].created_at);
 }, 30000);
 
-// ─── INIT ──────────────────────────────────────────────────
+/* ── INIT ── */
 fetchData();
 setInterval(fetchData, TICK_MS);
 </script>
