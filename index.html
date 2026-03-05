@@ -619,15 +619,34 @@ footer a { color:var(--green2); text-decoration:none; }
       <div class="s-card-title">&#9679; Last 8 Recorded Hours (today)</div>
       <span class="s-card-meta" id="hourlyMeta">—</span>
     </div>
+    <!-- Daily records progress -->
     <div class="prog-wrap">
       <div class="prog-lbl">
-        <span>Daily progress</span>
+        <span>Daily records progress</span>
         <span id="progPct">0 / 8</span>
       </div>
       <div class="prog-track"><div class="prog-fill" id="dayBar" style="width:0%"></div></div>
       <div class="prog-ticks">
         <span>00h</span><span>03h</span><span>06h</span><span>09h</span>
         <span>12h</span><span>15h</span><span>18h</span><span>21h</span><span>24h</span>
+      </div>
+    </div>
+    <!-- Countdown to next record -->
+    <div class="prog-wrap" style="border-bottom:none">
+      <div class="prog-lbl">
+        <span style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--green);font-size:10px">&#9650;</span>
+          Next record in
+        </span>
+        <span id="countdownLabel" style="color:var(--green);font-weight:700">--:--:--</span>
+      </div>
+      <div class="prog-track" style="height:4px">
+        <div id="countdownBar" style="height:4px;background:linear-gradient(90deg,#00cc6a,#00ff88);border-radius:3px;transition:width .9s linear;width:100%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);margin-top:5px">
+        <span>Now</span>
+        <span id="nextRecordTime" style="color:var(--text2)">—</span>
+        <span>Next record</span>
       </div>
     </div>
     <div class="tbl-wrap">
@@ -801,11 +820,17 @@ function setSensor(state, label) {
 }
 
 /* ── GROUP BY DAY ── */
+// Uses field3 (weekday sent by ESP32) as primary source.
+// If field3 is missing/invalid, falls back to the UTC timestamp weekday.
 function byDay(arr) {
   const r = {};
   arr.forEach(f => {
-    const d = parseInt(f.field3);
-    if (isNaN(d)||d<1||d>7) return;
+    let d = parseInt(f.field3);
+    if (isNaN(d) || d < 1 || d > 7) {
+      // Fallback: derive weekday from the timestamp
+      const loc = toLoc(f.created_at);
+      d = loc.getDay() === 0 ? 7 : loc.getDay();
+    }
     if (!r[d]) r[d] = { t:[], h:[], feeds:[] };
     const tv=parseFloat(f.field1), hv=parseFloat(f.field2);
     if (!isNaN(tv)) r[d].t.push(tv);
@@ -820,21 +845,22 @@ function renderHero(tv, hv, bd) {
   document.getElementById('hTemp').innerHTML = tv.toFixed(1)+'<span style="font-size:16px">°C</span>';
   document.getElementById('hHum').innerHTML  = hv.toFixed(1)+'<span style="font-size:16px">%</span>';
 
-  // online badge under temperature
   document.getElementById('hTempStatus').innerHTML =
     '<div class="online-badge"><span class="dot dot-on" style="width:6px;height:6px"></span>Online</div>';
 
-  // Today max/min
+  // Today max/min — use current day data from byDay
+  // Also include the live reading (tv, hv) in case it's the first record of the day
   const dh = todayWD();
   const dt = bd[dh];
-  if (dt && dt.t.length) {
-    const maxT=Math.max(...dt.t), minT=Math.min(...dt.t);
-    const maxH=Math.max(...dt.h), minH=Math.min(...dt.h);
-    document.getElementById('hTmax').innerHTML = maxT.toFixed(1)+'<span style="font-size:14px">°C</span>';
-    document.getElementById('hTmin').innerHTML = minT.toFixed(1)+'<span style="font-size:14px">°C</span>';
-    document.getElementById('hHmax').textContent = '▲ '+maxH.toFixed(1)+' %';
-    document.getElementById('hHmin').textContent = '▼ '+minH.toFixed(1)+' %';
-  }
+  const tArr = dt && dt.t.length ? [...dt.t, tv] : [tv];
+  const hArr = dt && dt.h.length ? [...dt.h, hv] : [hv];
+
+  const maxT = Math.max(...tArr), minT = Math.min(...tArr);
+  const maxH = Math.max(...hArr), minH = Math.min(...hArr);
+  document.getElementById('hTmax').innerHTML = maxT.toFixed(1)+'<span style="font-size:14px">°C</span>';
+  document.getElementById('hTmin').innerHTML = minT.toFixed(1)+'<span style="font-size:14px">°C</span>';
+  document.getElementById('hHmax').textContent = String.fromCharCode(9650)+' '+maxH.toFixed(1)+' %';
+  document.getElementById('hHmin').textContent = String.fromCharCode(9660)+' '+minH.toFixed(1)+' %';
 }
 
 /* ── RENDER: HOURLY TABLE (today's records only, up to 8) ── */
@@ -1072,6 +1098,11 @@ async function fetchData() {
 
     document.getElementById('lastUpd').textContent = fmtDT(last.created_at);
     document.getElementById('feedAge').textContent = ago(last.created_at);
+    // Set countdown reference: find the most recent entry that has field1+field2 (a real sensor log)
+    const realLogs = feeds.filter(f => !isNaN(parseFloat(f.field1)) && !isNaN(parseFloat(f.field2)));
+    if (realLogs.length) {
+      lastRecordTime = new Date(realLogs[realLogs.length-1].created_at).getTime();
+    }
 
     const bd = byDay(feeds);
 
@@ -1109,6 +1140,51 @@ setInterval(()=>{
   if (!feeds.length) return;
   document.getElementById('feedAge').textContent = ago(feeds[feeds.length-1].created_at);
 }, 30000);
+
+/* ── COUNTDOWN TO NEXT RECORD ── */
+// LOG_INTERVAL on ESP32 = 10800000ms = 10800s = 3 hours
+const LOG_INTERVAL_S = 10800; // seconds — must match ESP32 LOG_INTERVAL / 1000
+
+let lastRecordTime = null; // timestamp of last ThingSpeak entry
+
+function updateCountdown() {
+  if (!lastRecordTime) return;
+
+  const elapsed = (Date.now() - lastRecordTime) / 1000;   // seconds since last record
+  const remaining = Math.max(0, LOG_INTERVAL_S - elapsed); // seconds until next record
+  const progress  = Math.min(100, (elapsed / LOG_INTERVAL_S) * 100);
+
+  // Format remaining as HH:MM:SS
+  const h = Math.floor(remaining / 3600);
+  const m = Math.floor((remaining % 3600) / 60);
+  const s = Math.floor(remaining % 60);
+  const fmt = n => String(n).padStart(2,'0');
+  document.getElementById('countdownLabel').textContent = `${fmt(h)}:${fmt(m)}:${fmt(s)}`;
+
+  // Countdown bar: full at start, empties toward next record
+  const barPct = Math.max(0, 100 - progress);
+  document.getElementById('countdownBar').style.width = barPct + '%';
+
+  // Color changes as it approaches next record time
+  const color = barPct > 50 ? '#00ff88' :
+                barPct > 20 ? '#f59e0b' : '#ff4466';
+  document.getElementById('countdownBar').style.background =
+    `linear-gradient(90deg, ${color}88, ${color})`;
+  document.getElementById('countdownLabel').style.color = color;
+
+  // Show estimated next record time
+  const nextTs = new Date(lastRecordTime + LOG_INTERVAL_S * 1000);
+  const nl = toLoc(nextTs.toISOString());
+  document.getElementById('nextRecordTime').textContent =
+    `${p2(nl.getHours())}:${p2(nl.getMinutes())}:${p2(nl.getSeconds())}`;
+
+  // If time is up, show "recording soon"
+  if (remaining < 5) {
+    document.getElementById('countdownLabel').textContent = 'Recording...';
+  }
+}
+
+setInterval(updateCountdown, 1000);
 
 /* ── INIT ── */
 fetchData();
