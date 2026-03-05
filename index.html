@@ -564,6 +564,88 @@ footer a:hover { text-decoration: underline; }
   padding-left: 2px;
 }
 
+/* ─── SPACE DARK CHARTS (Weekly Charts section) ──────────── */
+.space-panel {
+  background: #0d1b3e;
+  border-radius: var(--r);
+  border: 1px solid #1e3060;
+  box-shadow: 0 0 0 1px rgba(100,160,255,.07), 0 8px 32px rgba(0,0,20,.4);
+  overflow: hidden;
+  position: relative;
+}
+.space-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 8%,  rgba(255,255,255,.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 25%, rgba(255,255,255,.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 60%, rgba(255,255,255,.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 80%, rgba(255,255,255,.15) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 70%, rgba(255,255,255,.2) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 92% 12%, rgba(255,255,255,.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,.2) 0%, transparent 100%);
+  z-index: 0;
+}
+.space-panel > * { position: relative; z-index: 1; }
+.space-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #1e3060;
+  background: rgba(255,255,255,.02);
+}
+.space-icon { color: #4ade80; font-size: 14px; }
+.space-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #4ade80;
+  text-transform: uppercase;
+}
+.space-chart-box {
+  background: rgba(255,255,255,.03);
+  border: 1px solid #1e3060;
+  border-radius: 10px;
+  padding: 16px;
+}
+.space-chart-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #8ab4d4;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── THINGSPEAK DARK CARDS ───────────────────────────────── */
+.ts-dark-card {
+  background: #0f1f44 !important;
+  border-color: #1e3060 !important;
+  box-shadow: 0 0 0 1px rgba(100,160,255,.07), 0 8px 32px rgba(0,0,20,.4) !important;
+}
+.ts-dark-head {
+  background: #1a2744 !important;
+  border-bottom-color: #1e3060 !important;
+}
+.ts-btn-ghost {
+  border-color: #2a4080 !important;
+  color: #8ab4d4 !important;
+}
+.ts-btn-ghost:hover {
+  border-color: #5bb8d4 !important;
+  color: #5bb8d4 !important;
+  background: rgba(91,184,212,.1) !important;
+}
+
 /* ─── RESPONSIVE ──────────────────────────────────── */
 @media (max-width: 768px) {
   .grid-2 { grid-template-columns: 1fr; }
@@ -746,28 +828,24 @@ footer a:hover { text-decoration: underline; }
 
   <!-- Charts — OUR custom bar charts -->
   <div class="section-label">Bar Charts — Daily Averages (This Week)</div>
-  <div class="grid-2 mb-5">
-    <div class="card">
-      <div class="card-head">
-        <div class="card-title">
-          <div class="card-title-icon icon-coral">🌡</div>
-          Temperature °C
+  <div class="space-panel mb-5">
+    <div class="space-panel-header">
+      <span class="space-icon">&#9636;</span>
+      <span class="space-title">WEEKLY CHARTS</span>
+    </div>
+    <div class="grid-2" style="padding:20px;gap:20px">
+      <div class="space-chart-box">
+        <div class="space-chart-label">
+          <span style="color:#e88080">&#x2139;</span>
+          TEMPERATURE &middot; CURRENT WEEK
         </div>
-        <span class="card-meta">avg per day</span>
-      </div>
-      <div class="chart-container">
         <canvas id="cT" height="220"></canvas>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-head">
-        <div class="card-title">
-          <div class="card-title-icon icon-teal">💧</div>
-          Relative Humidity %
+      <div class="space-chart-box">
+        <div class="space-chart-label">
+          <span style="color:#5bb8d4">&#x1F4A7;</span>
+          HUMIDITY &middot; CURRENT WEEK
         </div>
-        <span class="card-meta">avg per day</span>
-      </div>
-      <div class="chart-container">
         <canvas id="cH" height="220"></canvas>
       </div>
     </div>
@@ -775,41 +853,46 @@ footer a:hover { text-decoration: underline; }
 
   <!-- Combined chart: temp + humidity overlay -->
   <div class="section-label">Trend — Temperature &amp; Humidity Combined</div>
-  <div class="card mb-5">
-    <div class="card-head">
-      <div class="card-title">
-        <div class="card-title-icon icon-teal">📈</div>
-        Weekly Trend
-      </div>
-      <span class="card-meta">all records this week</span>
+  <div class="space-panel mb-5">
+    <div class="space-panel-header">
+      <span class="space-icon">&#9650;</span>
+      <span class="space-title">WEEKLY TREND &middot; ALL RECORDS</span>
     </div>
-    <div class="chart-container">
-      <canvas id="cLine" height="180"></canvas>
+    <div style="padding:20px">
+      <div class="space-chart-box">
+        <canvas id="cLine" height="180"></canvas>
+      </div>
     </div>
   </div>
 
   <!-- ThingSpeak embed -->
   <div class="section-label">ThingSpeak Live Charts</div>
   <div class="grid-2 mb-5">
-    <div class="card">
-      <div class="card-head">
-        <div class="card-title"><div class="card-title-icon icon-coral">🌡</div>Temperature — ThingSpeak</div>
-        <a class="btn" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
+    <div class="card ts-dark-card">
+      <div class="card-head ts-dark-head">
+        <div class="card-title" style="color:#e8f4ff">
+          <div class="card-title-icon" style="background:rgba(220,80,80,.2)">🌡</div>
+          Temperature — ThingSpeak
+        </div>
+        <a class="btn ts-btn-ghost" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
       </div>
-      <div style="padding:0 16px 16px">
-        <iframe width="100%" height="260" style="border:none;border-radius:8px"
-          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%23f9fafb&color=%23ff6b4a&dynamic=true&results=20&type=bar&update=15&title=Temperature+%C2%B0C">
+      <div style="padding:0 16px 16px;background:#1a2744">
+        <iframe width="100%" height="280" style="border:none;border-radius:8px;display:block"
+          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%231a2744&color=%23dc5050&dynamic=true&results=30&type=line&update=15&title=Measure+Weather&yaxislabel=Temperature&xaxislabel=Date">
         </iframe>
       </div>
     </div>
-    <div class="card">
-      <div class="card-head">
-        <div class="card-title"><div class="card-title-icon icon-teal">💧</div>Humidity — ThingSpeak</div>
-        <a class="btn" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
+    <div class="card ts-dark-card">
+      <div class="card-head ts-dark-head">
+        <div class="card-title" style="color:#e8f4ff">
+          <div class="card-title-icon" style="background:rgba(91,184,212,.2)">💧</div>
+          Humidity — ThingSpeak
+        </div>
+        <a class="btn ts-btn-ghost" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
       </div>
-      <div style="padding:0 16px 16px">
-        <iframe width="100%" height="260" style="border:none;border-radius:8px"
-          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%23f9fafb&color=%230bb5a4&dynamic=true&results=20&type=bar&update=15&title=Humidity+%25">
+      <div style="padding:0 16px 16px;background:#1a2744">
+        <iframe width="100%" height="280" style="border:none;border-radius:8px;display:block"
+          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%231a2744&color=%235bb8d4&dynamic=true&results=30&type=line&update=15&title=Measure+Weather&yaxislabel=Humidity&xaxislabel=Date">
         </iframe>
       </div>
     </div>
@@ -1049,66 +1132,81 @@ function renderWeekTable(bd) {
 
 // ─── RENDER: CHARTS ────────────────────────────────────────
 function renderCharts(bd) {
-  const labels = DAYS_LONG.map(d => d.slice(0,3));
+  const labels = DAYS_LONG;
   const tData  = Array.from({length:7}, (_,i) => { const d=bd[i+1]; return d&&d.t.length?+avg(d.t).toFixed(1):null; });
   const hData  = Array.from({length:7}, (_,i) => { const d=bd[i+1]; return d&&d.h.length?+avg(d.h).toFixed(1):null; });
 
-  const baseOpts = {
+  const darkOpts = {
     responsive: true,
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        labels: { color:'#8ab4d4', font:{family:'Space Mono',size:10}, boxWidth:14, padding:16 }
+      },
       tooltip: {
-        backgroundColor: '#1a2332',
-        titleColor: '#d4e0ed',
-        bodyColor: '#8a95a3',
-        padding: 10,
+        backgroundColor: '#0a1530',
+        titleColor: '#c8e0f4',
+        bodyColor: '#8ab4d4',
+        padding: 12,
         cornerRadius: 8,
         borderWidth: 1,
       }
     },
     scales: {
-      x: { ticks:{color:'#8a95a3',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(0,0,0,.04)'} },
-      y: { ticks:{color:'#8a95a3',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(0,0,0,.04)'} }
+      x: {
+        ticks: { color:'#5a7a9a', font:{family:'Space Mono',size:9}, maxRotation:0 },
+        grid:  { color:'rgba(30,60,100,.4)', lineWidth:1 },
+        border:{ color:'rgba(30,60,100,.6)' }
+      },
+      y: {
+        ticks: { color:'#5a7a9a', font:{family:'Space Mono',size:9} },
+        grid:  { color:'rgba(30,60,100,.4)', lineWidth:1 },
+        border:{ color:'rgba(30,60,100,.6)' },
+        beginAtZero: true
+      }
     }
   };
 
-  // Temp bar chart
   if (charts.cT) charts.cT.destroy();
   charts.cT = new Chart(document.getElementById('cT'), {
     type: 'bar',
     data: { labels, datasets: [{
-      label: 'Avg Temp °C', data: tData,
-      backgroundColor: tData.map(v => v===null ? 'transparent' : 'rgba(255,107,74,.65)'),
-      borderColor: 'rgba(255,107,74,1)',
-      borderWidth: 1.5,
-      borderRadius: 6,
+      label: 'Temp C',
+      data: tData,
+      backgroundColor: tData.map(v => v===null ? 'transparent' : 'rgba(200,100,100,.75)'),
+      borderColor:     tData.map(v => v===null ? 'transparent' : 'rgba(220,130,130,1)'),
+      borderWidth: 1,
+      borderRadius: 4,
+      borderSkipped: false,
     }]},
-    options: { ...baseOpts,
-      plugins: { ...baseOpts.plugins,
-        tooltip: { ...baseOpts.plugins.tooltip, borderColor: 'rgba(255,107,74,.5)' }
+    options: {
+      ...darkOpts,
+      plugins: { ...darkOpts.plugins,
+        tooltip: { ...darkOpts.plugins.tooltip, borderColor:'rgba(200,100,100,.5)' }
       }
     }
   });
 
-  // Hum bar chart
   if (charts.cH) charts.cH.destroy();
   charts.cH = new Chart(document.getElementById('cH'), {
     type: 'bar',
     data: { labels, datasets: [{
-      label: 'Avg Humidity %', data: hData,
-      backgroundColor: hData.map(v => v===null ? 'transparent' : 'rgba(11,181,164,.55)'),
-      borderColor: 'rgba(11,181,164,1)',
-      borderWidth: 1.5,
-      borderRadius: 6,
+      label: 'Hum %',
+      data: hData,
+      backgroundColor: hData.map(v => v===null ? 'transparent' : 'rgba(91,184,212,.7)'),
+      borderColor:     hData.map(v => v===null ? 'transparent' : 'rgba(120,200,230,1)'),
+      borderWidth: 1,
+      borderRadius: 4,
+      borderSkipped: false,
     }]},
-    options: { ...baseOpts,
-      plugins: { ...baseOpts.plugins,
-        tooltip: { ...baseOpts.plugins.tooltip, borderColor: 'rgba(11,181,164,.5)' }
+    options: {
+      ...darkOpts,
+      plugins: { ...darkOpts.plugins,
+        tooltip: { ...darkOpts.plugins.tooltip, borderColor:'rgba(91,184,212,.5)' }
       }
     }
   });
 
-  // Combined line chart (all raw records this week, chronological)
   const sorted = [...feeds].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   const lineLabels = sorted.map(f => fmtTime(f.created_at));
   const lineT = sorted.map(f => { const v=parseFloat(f.field1); return isNaN(v)?null:+v.toFixed(1); });
@@ -1121,24 +1219,26 @@ function renderCharts(bd) {
       labels: lineLabels,
       datasets: [
         {
-          label: 'Temperature °C',
+          label: 'Temperature C',
           data: lineT,
-          borderColor: 'rgba(255,107,74,1)',
-          backgroundColor: 'rgba(255,107,74,.08)',
+          borderColor: 'rgba(220,130,130,1)',
+          backgroundColor: 'rgba(200,80,80,.1)',
           borderWidth: 2,
-          tension: .35,
+          tension: .3,
           pointRadius: lineT.length > 20 ? 0 : 3,
+          pointBackgroundColor: 'rgba(220,130,130,1)',
           fill: true,
           yAxisID: 'yT',
         },
         {
           label: 'Humidity %',
           data: lineH,
-          borderColor: 'rgba(11,181,164,1)',
-          backgroundColor: 'rgba(11,181,164,.08)',
+          borderColor: 'rgba(91,184,212,1)',
+          backgroundColor: 'rgba(91,184,212,.08)',
           borderWidth: 2,
-          tension: .35,
+          tension: .3,
           pointRadius: lineH.length > 20 ? 0 : 3,
+          pointBackgroundColor: 'rgba(91,184,212,1)',
           fill: true,
           yAxisID: 'yH',
         }
@@ -1148,38 +1248,36 @@ function renderCharts(bd) {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color:'#8a95a3', font:{family:'Space Mono',size:9}, boxWidth:12 } },
+        legend: { labels: { color:'#8ab4d4', font:{family:'Space Mono',size:9}, boxWidth:12 } },
         tooltip: {
-          backgroundColor: '#1a2332',
-          titleColor: '#d4e0ed',
-          bodyColor: '#8a95a3',
-          padding: 10,
+          backgroundColor: '#0a1530',
+          titleColor: '#c8e0f4',
+          bodyColor: '#8ab4d4',
+          padding: 12,
           cornerRadius: 8,
           borderWidth: 1,
-          borderColor: 'rgba(11,181,164,.3)'
+          borderColor: 'rgba(91,184,212,.3)'
         }
       },
       scales: {
         x: {
-          ticks: {
-            color: '#8a95a3',
-            font: { family:'Space Mono', size:8 },
-            maxTicksLimit: 14,
-            maxRotation: 45,
-          },
-          grid: { color:'rgba(0,0,0,.04)' }
+          ticks: { color:'#5a7a9a', font:{family:'Space Mono',size:8}, maxTicksLimit:14, maxRotation:45 },
+          grid:  { color:'rgba(30,60,100,.4)' },
+          border:{ color:'rgba(30,60,100,.6)' }
         },
         yT: {
           position: 'left',
-          ticks: { color:'rgba(255,107,74,.8)', font:{family:'Space Mono',size:9} },
-          grid: { color:'rgba(0,0,0,.04)' },
-          title: { display:true, text:'°C', color:'rgba(255,107,74,.7)', font:{family:'Space Mono',size:9} }
+          ticks: { color:'rgba(220,130,130,.8)', font:{family:'Space Mono',size:9} },
+          grid:  { color:'rgba(30,60,100,.4)' },
+          border:{ color:'rgba(30,60,100,.6)' },
+          title: { display:true, text:'C', color:'rgba(220,130,130,.7)', font:{family:'Space Mono',size:9} }
         },
         yH: {
           position: 'right',
-          ticks: { color:'rgba(11,181,164,.8)', font:{family:'Space Mono',size:9} },
-          grid: { drawOnChartArea:false },
-          title: { display:true, text:'%', color:'rgba(11,181,164,.7)', font:{family:'Space Mono',size:9} }
+          ticks: { color:'rgba(91,184,212,.8)', font:{family:'Space Mono',size:9} },
+          grid:  { drawOnChartArea:false },
+          border:{ color:'rgba(30,60,100,.6)' },
+          title: { display:true, text:'%', color:'rgba(91,184,212,.7)', font:{family:'Space Mono',size:9} }
         }
       }
     }
