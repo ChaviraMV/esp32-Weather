@@ -133,21 +133,23 @@ canvas { width:100% !important; }
 .ts-frame iframe { width:100%; height:260px; border:none; display:block; }
 .ts-frame-label { font-size:10px; letter-spacing:2px; color:var(--muted); padding:8px 12px; text-align:center; border-top:1px solid var(--border); }
 
-/* TABLA SEMANAL */
+/* RESUMEN SEMANAL */
 .week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; padding:20px 24px; }
 .day-card  {
   background:var(--panel2); border:1px solid var(--border); border-radius:8px;
-  padding:12px 8px; text-align:center; transition:border-color .2s;
+  padding:12px 8px; text-align:center; transition:border-color .2s, opacity .2s;
 }
 .day-card.has-data { border-color:var(--accent); }
-.day-card.today    { border-color:var(--green); box-shadow:0 0 12px rgba(0,255,159,0.15); }
-.day-name  { font-family:'Orbitron',sans-serif; font-size:9px; letter-spacing:2px; color:var(--muted); margin-bottom:8px; }
+.day-card.today    { border-color:var(--green); box-shadow:0 0 14px rgba(0,255,159,0.2); }
+.day-card.future   { opacity:0.35; }
+.day-name  { font-family:'Orbitron',sans-serif; font-size:9px; letter-spacing:2px; color:var(--muted); margin-bottom:6px; }
+.day-hoy   { font-size:9px; color:var(--green); margin-bottom:4px; }
 .day-temp  { font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; color:var(--accent2); }
 .day-hum   { font-family:'Orbitron',sans-serif; font-size:14px; color:var(--accent); margin-top:4px; }
 .day-count { font-size:9px; color:var(--muted); margin-top:6px; }
 .day-empty { font-size:11px; color:var(--muted); margin-top:8px; }
 
-/* TABLA HISTORIAL */
+/* TABLA */
 table { width:100%; border-collapse:collapse; }
 th {
   padding:10px 16px; font-size:10px; letter-spacing:3px; color:var(--muted);
@@ -315,14 +317,15 @@ footer a:hover { text-decoration:underline; }
   <div class="section">
     <div class="sec-header">
       <div class="sec-title">📅 RESUMEN POR DÍA</div>
-      <div class="sec-note" id="weekNote">semana actual</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="sec-note" id="weekNote">semana actual</div>
+        <button class="btn danger" onclick="resetWeekGrid()">🔄 Reiniciar resumen</button>
+      </div>
     </div>
-    <div class="week-grid" id="weekGrid">
-      <!-- Se genera con JS -->
-    </div>
+    <div class="week-grid" id="weekGrid"></div>
   </div>
 
-  <!-- GRÁFICAS THINGSPEAK (embebidas directamente) -->
+  <!-- GRÁFICAS THINGSPEAK -->
   <div class="section">
     <div class="sec-header">
       <div class="sec-title">📊 GRÁFICAS THINGSPEAK</div>
@@ -427,7 +430,7 @@ footer a:hover { text-decoration:underline; }
   <footer>
     ESP32 · REGISTROS CADA 3H · DATOS VÍA
     <a href="https://thingspeak.com/channels/3284038" target="_blank">THINGSPEAK</a> ·
-    <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a> · V4.0
+    <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a> · V4.1
   </footer>
 
 </div>
@@ -439,15 +442,16 @@ footer a:hover { text-decoration:underline; }
 // ══════════════════════════════════════════
 const TS_CHANNEL_ID      = "3284038";
 const TS_READ_KEY        = "IV68XDIEZ0KAVM7N";
-const RESULTS            = 56;   // 7 días × 8 registros
+const RESULTS            = 56;
 const TZ                 = "America/Tijuana";
-const OFFLINE_THRESH_SEC = 10800 * 1.5; // 1.5 × 3 horas → offline si no llega en ese tiempo
+const OFFLINE_THRESH_SEC = 10800 * 1.5; // 4.5 horas
 // ══════════════════════════════════════════
 
-let allFeeds    = [];
-let hiddenIds   = new Set();
-let refreshTimer = null;
-let pageRefreshMs = 3 * 60 * 1000; // default 3 min
+let allFeeds      = [];
+let hiddenIds     = new Set();
+let refreshTimer  = null;
+let pageRefreshMs = 3 * 60 * 1000;
+let weekGridHidden = false;
 
 const DIAS_SEMANA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 
@@ -472,9 +476,11 @@ const DIAS_SEMANA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado',
 function updateClock(){
   const t = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
   const p = n => String(n).padStart(2,'0');
-  document.getElementById('clock').textContent = `${p(t.getHours())}:${p(t.getMinutes())}:${p(t.getSeconds())}`;
+  document.getElementById('clock').textContent =
+    `${p(t.getHours())}:${p(t.getMinutes())}:${p(t.getSeconds())}`;
   const dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
+                 'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   document.getElementById('dateLabel').textContent =
     `${dias[t.getDay()]}, ${t.getDate()} de ${meses[t.getMonth()]} ${t.getFullYear()}`;
 }
@@ -506,10 +512,34 @@ function setBadge(cls, text){
   b.textContent = text;
 }
 
-/* ── RESUMEN SEMANAL POR DÍA ── */
+// Fecha del lunes de la semana actual
+function getLunes(fecha){
+  const d = new Date(fecha);
+  const wd = d.getDay() || 7;
+  d.setDate(d.getDate() - wd + 1);
+  const p = n => String(n).padStart(2,'0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}`;
+}
+
+// Domingo del lunes de la semana actual
+function getDomingo(fecha){
+  const d = new Date(fecha);
+  const wd = d.getDay() || 7;
+  d.setDate(d.getDate() - wd + 7);
+  const p = n => String(n).padStart(2,'0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)}`;
+}
+
+/* ── RESUMEN SEMANAL (día real) ── */
 function buildWeekGrid(feeds){
-  // Agrupar por día de la semana usando field3 (día 1-7 que manda el ESP32)
-  const byDay = {}; // { "1": [{temp, hum}], "2": [...], ... }
+  if(weekGridHidden) return;
+
+  // Día de hoy en TZ Tijuana (1=Lun...7=Dom)
+  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
+  const diaHoy = hoy.getDay() === 0 ? 7 : hoy.getDay();
+
+  // Agrupar por field3 (día real 1-7 enviado por ESP32)
+  const byDay = {};
   feeds.forEach(f => {
     const d = parseInt(f.field3);
     if(isNaN(d) || d < 1 || d > 7) return;
@@ -517,33 +547,50 @@ function buildWeekGrid(feeds){
     byDay[d].push({ temp: parseFloat(f.field1), hum: parseFloat(f.field2) });
   });
 
-  // Día actual aproximado basado en el último field3
-  const lastDay = feeds.length ? parseInt(feeds[feeds.length-1].field3) : 0;
-
   const grid = document.getElementById('weekGrid');
   grid.innerHTML = '';
+
   for(let d = 1; d <= 7; d++){
     const data  = byDay[d] || [];
     const valid = data.filter(r => !isNaN(r.temp) && !isNaN(r.hum));
-    const avgT  = valid.length ? (valid.reduce((s,r)=>s+r.temp,0)/valid.length).toFixed(1) : null;
-    const avgH  = valid.length ? (valid.reduce((s,r)=>s+r.hum, 0)/valid.length).toFixed(1) : null;
-    const isToday = d === lastDay;
+    const avgT  = valid.length
+      ? (valid.reduce((s,r) => s + r.temp, 0) / valid.length).toFixed(1) : null;
+    const avgH  = valid.length
+      ? (valid.reduce((s,r) => s + r.hum,  0) / valid.length).toFixed(1) : null;
+
+    const isToday  = d === diaHoy;
+    const isFuture = d > diaHoy;
 
     const card = document.createElement('div');
-    card.className = 'day-card' + (valid.length ? ' has-data' : '') + (isToday ? ' today' : '');
+    card.className = 'day-card'
+      + (valid.length ? ' has-data' : '')
+      + (isToday      ? ' today'    : '')
+      + (isFuture     ? ' future'   : '');
+
     card.innerHTML = `
       <div class="day-name">${DIAS_SEMANA[d-1].toUpperCase()}</div>
+      ${isToday ? '<div class="day-hoy">● HOY</div>' : ''}
       ${avgT !== null
         ? `<div class="day-temp">${avgT}°</div>
            <div class="day-hum">${avgH}%</div>
            <div class="day-count">${valid.length}/8 reg</div>`
-        : `<div class="day-empty">—</div>`
+        : `<div class="day-empty">${isFuture ? 'pendiente' : '—'}</div>`
       }`;
     grid.appendChild(card);
   }
 
-  const total = feeds.length;
-  document.getElementById('weekNote').textContent = `${total} / 56 registros`;
+  document.getElementById('weekNote').textContent =
+    `Semana ${getLunes(hoy)} – ${getDomingo(hoy)} · ${feeds.length}/56 registros`;
+}
+
+/* ── REINICIAR RESUMEN ── */
+function resetWeekGrid(){
+  if(!confirm('¿Reiniciar el resumen por día?\nLos datos en ThingSpeak NO se borran.\nSe restaura al recargar la página.')) return;
+  weekGridHidden = true;
+  document.getElementById('weekGrid').innerHTML =
+    '<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px;letter-spacing:2px;width:100%">' +
+    '— RESUMEN REINICIADO · RECARGA LA PÁGINA PARA RESTAURAR —</div>';
+  document.getElementById('weekNote').textContent = 'reiniciado';
 }
 
 /* ── FETCH PRINCIPAL ── */
@@ -566,35 +613,45 @@ async function fetchData(){
 
     setBadge(vivo ? 'online' : 'offline',
       vivo ? '● SENSOR ONLINE'
-           : `✖ SENSOR OFFLINE · ${secsAgo<60?Math.floor(secsAgo)+'s':secsAgo<3600?Math.floor(secsAgo/60)+'min':Math.floor(secsAgo/3600)+'h'} sin señal`);
+           : `✖ SENSOR OFFLINE · ${
+               secsAgo < 60   ? Math.floor(secsAgo) + 's' :
+               secsAgo < 3600 ? Math.floor(secsAgo/60) + 'min' :
+                                Math.floor(secsAgo/3600) + 'h'
+             } sin señal`);
 
     document.getElementById('lastUpdated').textContent = formatDate(last.created_at);
     document.getElementById('feedAge').textContent     = timeAgo(last.created_at);
 
     if(isOk){
-      document.getElementById('tempVal').innerHTML = lastT.toFixed(1)+'<span class="s-unit">°C</span>';
-      document.getElementById('humVal').innerHTML  = lastH.toFixed(1)+'<span class="s-unit">%</span>';
-      document.getElementById('tempBar').style.width = Math.min(100,Math.max(0,(lastT/50)*100))+'%';
-      document.getElementById('humBar').style.width  = Math.min(100,Math.max(0,lastH))+'%';
+      document.getElementById('tempVal').innerHTML =
+        lastT.toFixed(1) + '<span class="s-unit">°C</span>';
+      document.getElementById('humVal').innerHTML  =
+        lastH.toFixed(1) + '<span class="s-unit">%</span>';
+      document.getElementById('tempBar').style.width =
+        Math.min(100, Math.max(0, (lastT/50)*100)) + '%';
+      document.getElementById('humBar').style.width  =
+        Math.min(100, Math.max(0, lastH)) + '%';
       document.getElementById('tempStatus').textContent =
-        lastT>30?'🔴 Temperatura alta':lastT<18?'🔵 Temperatura fría':'🟢 Temperatura normal';
+        lastT > 30 ? '🔴 Temperatura alta' :
+        lastT < 18 ? '🔵 Temperatura fría' : '🟢 Temperatura normal';
       document.getElementById('humStatus').textContent  =
-        lastH>80?'💦 Humedad muy alta':lastH<30?'🏜️ Humedad muy baja':'✅ Humedad normal';
+        lastH > 80 ? '💦 Humedad muy alta' :
+        lastH < 30 ? '🏜️ Humedad muy baja' : '✅ Humedad normal';
     }
 
     // Estadísticas
-    const temps = feeds.map(f=>parseFloat(f.field1)).filter(v=>!isNaN(v));
-    const hums  = feeds.map(f=>parseFloat(f.field2)).filter(v=>!isNaN(v));
+    const temps = feeds.map(f => parseFloat(f.field1)).filter(v => !isNaN(v));
+    const hums  = feeds.map(f => parseFloat(f.field2)).filter(v => !isNaN(v));
     if(temps.length){
-      document.getElementById('statTempMax').textContent = Math.max(...temps).toFixed(1)+'°';
-      document.getElementById('statTempMin').textContent = Math.min(...temps).toFixed(1)+'°';
+      document.getElementById('statTempMax').textContent = Math.max(...temps).toFixed(1) + '°';
+      document.getElementById('statTempMin').textContent = Math.min(...temps).toFixed(1) + '°';
     }
     if(hums.length){
-      document.getElementById('statHumMax').textContent = Math.max(...hums).toFixed(1)+'%';
-      document.getElementById('statHumMin').textContent = Math.min(...hums).toFixed(1)+'%';
+      document.getElementById('statHumMax').textContent = Math.max(...hums).toFixed(1) + '%';
+      document.getElementById('statHumMin').textContent = Math.min(...hums).toFixed(1) + '%';
     }
 
-    // Resumen semanal por día
+    // Resumen semanal
     buildWeekGrid(feeds);
 
     // Tabla historial
@@ -614,23 +671,24 @@ function renderHistory(feeds){
   const visible = [...feeds].reverse().filter(f => !hiddenIds.has(f.entry_id));
   tbody.innerHTML = '';
   if(!visible.length){
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">— Historial vacío. Los datos siguen en ThingSpeak. —</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="6" class="empty">— Historial vacío. Los datos siguen en ThingSpeak. —</td></tr>';
     return;
   }
-  visible.forEach((f,i) => {
+  visible.forEach((f, i) => {
     const t   = parseFloat(f.field1);
     const h   = parseFloat(f.field2);
     const dia = parseInt(f.field3);
     const reg = parseInt(f.field4);
-    const cls = t>30?'hot':t<18?'cold':'ok';
+    const cls = t > 30 ? 'hot' : t < 18 ? 'cold' : 'ok';
     const tr  = document.createElement('tr');
     tr.innerHTML = `
-      <td>${i+1}</td>
+      <td>${i + 1}</td>
       <td>${formatDate(f.created_at)}</td>
-      <td>${isNaN(dia)?'—':'Día '+dia+' · '+(DIAS_SEMANA[dia-1]||'')}</td>
-      <td>${isNaN(reg)?'—':reg+'/8'}</td>
-      <td class="${cls}">${isNaN(t)?'—':t.toFixed(1)+' °C'}</td>
-      <td>${isNaN(h)?'—':h.toFixed(1)+' %'}</td>`;
+      <td>${isNaN(dia) ? '—' : DIAS_SEMANA[dia-1] || 'Día '+dia}</td>
+      <td>${isNaN(reg) ? '—' : reg + '/8'}</td>
+      <td class="${cls}">${isNaN(t) ? '—' : t.toFixed(1) + ' °C'}</td>
+      <td>${isNaN(h) ? '—' : h.toFixed(1) + ' %'}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -643,10 +701,10 @@ function resetHistory(){
 
 /* ── INTERVALO ── */
 function applyInterval(){
-  const h  = parseInt(document.getElementById('iH').value)||0;
-  const m  = parseInt(document.getElementById('iM').value)||0;
-  const s  = parseInt(document.getElementById('iS').value)||0;
-  const ms = (h*3600+m*60+s)*1000;
+  const h  = parseInt(document.getElementById('iH').value) || 0;
+  const m  = parseInt(document.getElementById('iM').value) || 0;
+  const s  = parseInt(document.getElementById('iS').value) || 0;
+  const ms = (h * 3600 + m * 60 + s) * 1000;
   const fb = document.getElementById('intervalFeedback');
   if(ms < 15000){
     fb.textContent = '⚠ Mínimo 15 segundos.'; fb.className = 'input-feedback err'; return;
@@ -656,12 +714,12 @@ function applyInterval(){
   refreshTimer = setInterval(fetchData, pageRefreshMs);
   document.getElementById('intervalDisplay').textContent = 'Actual: ' + intervalStr(ms);
   fb.textContent = `✔ Refresco cada ${intervalStr(ms)}`; fb.className = 'input-feedback ok';
-  setTimeout(()=>{ fb.textContent=''; }, 4000);
+  setTimeout(() => { fb.textContent = ''; }, 4000);
 }
-function setPreset(h,m,s){
-  document.getElementById('iH').value=h;
-  document.getElementById('iM').value=m;
-  document.getElementById('iS').value=s;
+function setPreset(h, m, s){
+  document.getElementById('iH').value = h;
+  document.getElementById('iM').value = m;
+  document.getElementById('iS').value = s;
   applyInterval();
 }
 
@@ -671,17 +729,21 @@ function downloadCSV(){
   if(!visible.length){ alert('No hay datos.'); return; }
   let csv = 'Fecha,Hora,Día semana,Registro del día,Temperatura (°C),Humedad (%)\n';
   visible.forEach(f => {
-    const d   = toLocal(f.created_at), p = n => String(n).padStart(2,'0');
-    const dia = parseInt(f.field3), reg = parseInt(f.field4);
-    const t   = parseFloat(f.field1), h = parseFloat(f.field2);
+    const d   = toLocal(f.created_at);
+    const p   = n => String(n).padStart(2,'0');
+    const dia = parseInt(f.field3);
+    const reg = parseInt(f.field4);
+    const t   = parseFloat(f.field1);
+    const h   = parseFloat(f.field2);
     csv += `"${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}",`
          + `"${p(d.getHours())}:${p(d.getMinutes())}",`
-         + `"${isNaN(dia)?'':DIAS_SEMANA[dia-1]||dia}",`
-         + `"${isNaN(reg)?'':reg+'/8'}",`
-         + `"${isNaN(t)?'':t.toFixed(1)}","${isNaN(h)?'':h.toFixed(1)}"\n`;
+         + `"${isNaN(dia) ? '' : DIAS_SEMANA[dia-1] || dia}",`
+         + `"${isNaN(reg) ? '' : reg + '/8'}",`
+         + `"${isNaN(t)   ? '' : t.toFixed(1)}",`
+         + `"${isNaN(h)   ? '' : h.toFixed(1)}"\n`;
   });
   const a = document.createElement('a');
-  a.href  = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.href  = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' }));
   a.download = `clima_semanal_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
@@ -691,7 +753,7 @@ document.getElementById('intervalDisplay').textContent = 'Actual: ' + intervalSt
 fetchData();
 refreshTimer = setInterval(fetchData, pageRefreshMs);
 
-// Actualizar badge offline y "hace X" sin fetch completo cada 30s
+// Actualizar badge y "hace X" cada 30s sin fetch completo
 setInterval(() => {
   if(!allFeeds.length) return;
   const last    = allFeeds[allFeeds.length-1];
@@ -700,7 +762,9 @@ setInterval(() => {
   const lastH   = parseFloat(last.field2);
   const vivo    = !isNaN(lastT) && !isNaN(lastH) && secsAgo <= OFFLINE_THRESH_SEC;
   if(!vivo){
-    const t = secsAgo<60?Math.floor(secsAgo)+'s':secsAgo<3600?Math.floor(secsAgo/60)+'min':Math.floor(secsAgo/3600)+'h';
+    const t = secsAgo < 60   ? Math.floor(secsAgo) + 's' :
+              secsAgo < 3600 ? Math.floor(secsAgo/60) + 'min' :
+                               Math.floor(secsAgo/3600) + 'h';
     setBadge('offline', `✖ SENSOR OFFLINE · ${t} sin señal`);
   }
   document.getElementById('feedAge').textContent = timeAgo(last.created_at);
