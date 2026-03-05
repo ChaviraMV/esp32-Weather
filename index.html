@@ -381,34 +381,6 @@ footer a:hover { text-decoration:underline; }
     </div>
   </div>
 
-  <!-- INTERVALO DE REFRESCO -->
-  <div class="section">
-    <div class="sec-header">
-      <div class="sec-title">⏱ INTERVALO DE REFRESCO</div>
-      <div class="sec-note" id="intervalDisplay">Actual: --</div>
-    </div>
-    <div class="config-body">
-      <div class="input-group">
-        <input type="number" class="input-time" id="iH" placeholder="HH" min="0" max="23" value="0">
-        <span class="input-sep">h</span>
-        <input type="number" class="input-time" id="iM" placeholder="MM" min="0" max="59" value="3">
-        <span class="input-sep">min</span>
-        <input type="number" class="input-time" id="iS" placeholder="SS" min="0" max="59" value="0">
-        <span class="input-sep">seg</span>
-        <button class="btn success" onclick="applyInterval()">✔ Aplicar</button>
-      </div>
-      <div class="input-feedback" id="intervalFeedback"></div>
-      <div class="presets">
-        <span style="font-size:11px;color:var(--muted);align-self:center;">Presets:</span>
-        <button class="btn small" onclick="setPreset(0,1,0)">1 min</button>
-        <button class="btn small" onclick="setPreset(0,5,0)">5 min</button>
-        <button class="btn small" onclick="setPreset(0,10,0)">10 min</button>
-        <button class="btn small" onclick="setPreset(1,0,0)">1 hora</button>
-        <button class="btn small" onclick="setPreset(3,0,0)">3 horas</button>
-      </div>
-    </div>
-  </div>
-
   <!-- COLABORADORES -->
   <div class="collab">
     <div class="collab-title">👥 EQUIPO DEL PROYECTO</div>
@@ -453,7 +425,7 @@ const OFFLINE_THRESH_SEC = 10800 * 1.5; // 4.5 horas
 
 let allFeeds      = [];
 let refreshTimer  = null;
-let pageRefreshMs = 3 * 60 * 1000;
+let pageRefreshMs = 5 * 60 * 1000; // Auto-refresco cada 5 minutos
 let chartTemp     = null;
 let chartHum      = null;
 
@@ -803,30 +775,7 @@ function downloadWeekCSV(){
   a.click();
 }
 
-/* ── INTERVALO ── */
-function applyInterval(){
-  const h=parseInt(document.getElementById('iH').value)||0;
-  const m=parseInt(document.getElementById('iM').value)||0;
-  const s=parseInt(document.getElementById('iS').value)||0;
-  const ms=(h*3600+m*60+s)*1000;
-  const fb=document.getElementById('intervalFeedback');
-  if(ms<15000){ fb.textContent='⚠ Mínimo 15 segundos.'; fb.className='input-feedback err'; return; }
-  pageRefreshMs=ms;
-  clearInterval(refreshTimer);
-  refreshTimer=setInterval(fetchData,pageRefreshMs);
-  document.getElementById('intervalDisplay').textContent='Actual: '+intervalStr(ms);
-  fb.textContent=`✔ Refresco cada ${intervalStr(ms)}`; fb.className='input-feedback ok';
-  setTimeout(()=>{ fb.textContent=''; },4000);
-}
-function setPreset(h,m,s){
-  document.getElementById('iH').value=h;
-  document.getElementById('iM').value=m;
-  document.getElementById('iS').value=s;
-  applyInterval();
-}
-
 /* ── ARRANQUE ── */
-document.getElementById('intervalDisplay').textContent = 'Actual: '+intervalStr(pageRefreshMs);
 fetchData();
 refreshTimer = setInterval(fetchData, pageRefreshMs);
 
