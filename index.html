@@ -1087,7 +1087,14 @@ async function fetchData() {
     document.getElementById('lastUpd').textContent = fmtDT(last.created_at);
     document.getElementById('feedAge').textContent = ago(last.created_at);
     // Set countdown reference: find the most recent entry that has field1+field2 (a real sensor log)
-    const realLogs = feeds.filter(f => !isNaN(parseFloat(f.field1)) && !isNaN(parseFloat(f.field2)));
+    // Anchor countdown to last REAL record only (field3=1-7 AND field4=1-8)
+    // Heartbeats have field3=0 so they are excluded.
+    // This means a page refresh never resets the countdown — it always
+    // re-reads the same last real record timestamp from ThingSpeak.
+    const realLogs = feeds.filter(f => {
+      const d = parseInt(f.field3), n = parseInt(f.field4);
+      return d >= 1 && d <= 7 && n >= 1 && n <= 8;
+    });
     if (realLogs.length) {
       lastRecordTime = new Date(realLogs[realLogs.length-1].created_at).getTime();
     }
