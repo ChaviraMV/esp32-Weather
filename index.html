@@ -619,24 +619,6 @@ footer a { color:var(--green2); text-decoration:none; }
       <div class="s-card-title">&#9679; Last 8 Recorded Hours (today)</div>
       <span class="s-card-meta" id="hourlyMeta">—</span>
     </div>
-    <!-- Countdown to next record only -->
-    <div class="prog-wrap" style="border-bottom:1px solid var(--border)">
-      <div class="prog-lbl">
-        <span style="display:flex;align-items:center;gap:8px">
-          <span style="color:var(--green);font-size:10px">&#9650;</span>
-          Next record in
-        </span>
-        <span id="countdownLabel" style="color:var(--green);font-weight:700">--:--:--</span>
-      </div>
-      <div class="prog-track" style="height:4px">
-        <div id="countdownBar" style="height:4px;background:linear-gradient(90deg,#00cc6a,#00ff88);border-radius:3px;transition:width .9s linear;width:100%"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);margin-top:5px">
-        <span>Now</span>
-        <span id="nextRecordTime" style="color:var(--text2)">—</span>
-        <span>Next record</span>
-      </div>
-    </div>
     <div class="tbl-wrap">
       <table>
         <thead><tr><th>#</th><th>Hour</th><th>Temp °C</th><th>Hum %</th></tr></thead>
@@ -1089,25 +1071,6 @@ async function fetchData() {
 
     document.getElementById('lastUpd').textContent = fmtDT(last.created_at);
     document.getElementById('feedAge').textContent = ago(last.created_at);
-    // Set countdown reference: find the most recent entry that has field1+field2 (a real sensor log)
-    // Anchor countdown to last REAL record (field3=1-7 AND field4=1-8)
-    // Heartbeats have field3=0 and are excluded from this anchor.
-    // If no real record exists yet, fall back to the last heartbeat so
-    // the countdown always shows something meaningful on first boot.
-    const realLogs = feeds.filter(f => {
-      const d = parseInt(f.field3), n = parseInt(f.field4);
-      return d >= 1 && d <= 7 && n >= 1 && n <= 8;
-    });
-    if (realLogs.length) {
-      // Use the last real record — stable across page refreshes
-      lastRecordTime = new Date(realLogs[realLogs.length-1].created_at).getTime();
-    } else {
-      // No real records yet: fall back to the last feed entry (heartbeat)
-      // so the countdown starts counting from the last known transmission
-      const lastFeed = feeds[feeds.length - 1];
-      if (lastFeed) lastRecordTime = new Date(lastFeed.created_at).getTime();
-    }
-
     const bd = byDay(feeds);
 
     if (ok) renderHero(tv, hv, bd);
@@ -1144,51 +1107,6 @@ setInterval(()=>{
   if (!feeds.length) return;
   document.getElementById('feedAge').textContent = ago(feeds[feeds.length-1].created_at);
 }, 30000);
-
-/* ── COUNTDOWN TO NEXT RECORD ── */
-// LOG_INTERVAL on ESP32 = 10800000ms = 10800s = 3 hours
-const LOG_INTERVAL_S = 10800; // seconds — must match ESP32 LOG_INTERVAL / 1000
-
-let lastRecordTime = null; // timestamp of last ThingSpeak entry
-
-function updateCountdown() {
-  if (!lastRecordTime) return;
-
-  const elapsed = (Date.now() - lastRecordTime) / 1000;   // seconds since last record
-  const remaining = Math.max(0, LOG_INTERVAL_S - elapsed); // seconds until next record
-  const progress  = Math.min(100, (elapsed / LOG_INTERVAL_S) * 100);
-
-  // Format remaining as HH:MM:SS
-  const h = Math.floor(remaining / 3600);
-  const m = Math.floor((remaining % 3600) / 60);
-  const s = Math.floor(remaining % 60);
-  const fmt = n => String(n).padStart(2,'0');
-  document.getElementById('countdownLabel').textContent = `${fmt(h)}:${fmt(m)}:${fmt(s)}`;
-
-  // Countdown bar: full at start, empties toward next record
-  const barPct = Math.max(0, 100 - progress);
-  document.getElementById('countdownBar').style.width = barPct + '%';
-
-  // Color changes as it approaches next record time
-  const color = barPct > 50 ? '#00ff88' :
-                barPct > 20 ? '#f59e0b' : '#ff4466';
-  document.getElementById('countdownBar').style.background =
-    `linear-gradient(90deg, ${color}88, ${color})`;
-  document.getElementById('countdownLabel').style.color = color;
-
-  // Show estimated next record time
-  const nextTs = new Date(lastRecordTime + LOG_INTERVAL_S * 1000);
-  const nl = toLoc(nextTs.toISOString());
-  document.getElementById('nextRecordTime').textContent =
-    `${p2(nl.getHours())}:${p2(nl.getMinutes())}:${p2(nl.getSeconds())}`;
-
-  // If time is up, show "recording soon"
-  if (remaining < 5) {
-    document.getElementById('countdownLabel').textContent = 'Recording...';
-  }
-}
-
-setInterval(updateCountdown, 1000);
 
 /* ── INIT ── */
 fetchData();
