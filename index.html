@@ -752,7 +752,11 @@ footer a { color:var(--green2); text-decoration:none; }
    ============================================================ */
 const CH_ID      = "3284038";
 const RD_KEY     = "IV68XDIEZ0KAVM7N";
-const RESULTS    = 56;
+// RESULTS: cuantas entradas descargar de ThingSpeak.
+// Con heartbeat cada 30s = ~2880 entradas/dia de heartbeats + 8 registros reales.
+// ThingSpeak plan gratuito permite maximo 8000 por request.
+// Usamos 8000 para cubrir varios dias y no perder registros reales.
+const RESULTS    = 8000;
 const TZ         = "America/Tijuana";
 const OFFLINE_S  = 10800 * 1.5;
 const TICK_MS    = 5 * 60 * 1000;
@@ -808,19 +812,18 @@ function setSensor(state, label) {
 }
 
 /* ── GROUP BY DAY ── */
-// Uses field3 (weekday sent by ESP32) as primary source.
-// If field3 is missing/invalid, falls back to the UTC timestamp weekday.
+// Solo procesa registros REALES: field3 entre 1-7 Y field4 entre 1-8.
+// Heartbeats (field3 null o ausente) son ignorados completamente.
 function byDay(arr) {
   const r = {};
   arr.forEach(f => {
-    let d = parseInt(f.field3);
-    if (isNaN(d) || d < 1 || d > 7) {
-      // Fallback: derive weekday from the timestamp
-      const loc = toLoc(f.created_at);
-      d = loc.getDay() === 0 ? 7 : loc.getDay();
-    }
+    const d = parseInt(f.field3);
+    const n = parseInt(f.field4);
+    // Ignorar heartbeats y entradas invalidas
+    if (isNaN(d) || d < 1 || d > 7) return;
+    if (isNaN(n) || n < 1 || n > 8) return;
     if (!r[d]) r[d] = { t:[], h:[], feeds:[] };
-    const tv=parseFloat(f.field1), hv=parseFloat(f.field2);
+    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
     if (!isNaN(tv)) r[d].t.push(tv);
     if (!isNaN(hv)) r[d].h.push(hv);
     r[d].feeds.push(f);
