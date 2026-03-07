@@ -793,15 +793,13 @@ function setSensor(state, label) {
   el.style.color = state==='on' ? 'var(--green)' : state==='off' ? 'var(--pink)' : 'var(--text2)';
 }
 
-/* ── GROUP BY DAY ── */
-// Solo procesa registros REALES: field3 entre 1-7 Y field4 entre 1-8.
-// Heartbeats (field3 null o ausente) son ignorados completamente.
+/* ── GROUP BY DAY — solo registros oficiales (field3=1-7, field4=1-8) ── */
+// Usado para: tabla semanal, hourly, charts
 function byDay(arr) {
   const r = {};
   arr.forEach(f => {
     const d = parseInt(f.field3);
     const n = parseInt(f.field4);
-    // Ignorar heartbeats y entradas invalidas
     if (isNaN(d) || d < 1 || d > 7) return;
     if (isNaN(n) || n < 1 || n > 8) return;
     if (!r[d]) r[d] = { t:[], h:[], feeds:[] };
@@ -809,6 +807,27 @@ function byDay(arr) {
     if (!isNaN(tv)) r[d].t.push(tv);
     if (!isNaN(hv)) r[d].h.push(hv);
     r[d].feeds.push(f);
+  });
+  return r;
+}
+
+/* ── GROUP BY DAY — todos los feeds incluyendo heartbeats ── */
+// Usado para: calcular max/min en tiempo real del dia actual
+// Los heartbeats no tienen field3/field4 validos, se agrupan por timestamp
+function byDayAllFeeds(arr) {
+  const r = {};
+  arr.forEach(f => {
+    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
+    if (isNaN(tv) && isNaN(hv)) return; // sin datos utiles
+    // Usar field3 si es valido, sino derivar del timestamp
+    let d = parseInt(f.field3);
+    if (isNaN(d) || d < 1 || d > 7) {
+      const loc = toLoc(f.created_at);
+      d = loc.getDay() === 0 ? 7 : loc.getDay();
+    }
+    if (!r[d]) r[d] = { t:[], h:[] };
+    if (!isNaN(tv)) r[d].t.push(tv);
+    if (!isNaN(hv)) r[d].h.push(hv);
   });
   return r;
 }
@@ -869,7 +888,11 @@ function renderHourly(bd) {
 }
 
 /* ── RENDER: WEEKLY TILES ── */
-function renderTiles(bd) {
+// Cada tile muestra el MAXIMO del dia.
+// Para dias pasados: maximo de los registros oficiales.
+// Para hoy: maximo de TODOS los feeds (registros + heartbeats) para reflejar
+//           el valor mas alto en tiempo real, aunque aun no se haya guardado.
+function renderTiles(bd, bdAll) {
   const dh  = todayWD();
   const now = new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
   const wd  = now.getDay()||7;
@@ -883,43 +906,64 @@ function renderTiles(bd) {
   const wrap = document.getElementById('tiles');
   wrap.innerHTML = '';
   for (let d=1; d<=7; d++) {
-    const data    = bd[d];
-    const isToday = d===dh;
-    const isFut   = d>dh;
-    const hasDat  = data && data.t.length;
-    const avgT    = hasDat ? avg(data.t).toFixed(1) : null;
-    const avgH    = hasDat ? avg(data.h).toFixed(1) : null;
+    const isToday = d === dh;
+    const isFut   = d > dh;
+
+    // Para hoy usar bdAll (incluye heartbeats) — para dias pasados solo registros oficiales
+    const src   = isToday ? (bdAll[d] || bd[d]) : bd[d];
+    const hasDat = src && src.t && src.t.length;
+
+    // Mostrar MAXIMO del dia (si solo hay 1 valor, max = ese valor)
+    const maxT = hasDat ? Math.max(...src.t).toFixed(1) : null;
+    const maxH = hasDat ? Math.max(...src.h).toFixed(1) : null;
+
+    // Contar solo registros oficiales para el indicador X/8
+    const offRec = bd[d] ? bd[d].t.length : 0;
 
     const tile = document.createElement('div');
     tile.className = 'w-tile'+(hasDat?' has-data':'')+(isToday?' is-today':'')+(isFut?' is-future':'');
     tile.innerHTML =
-      (isToday?'<div class="w-tile-badge">TODAY</div>':'')+
+      (isToday ? '<div class="w-tile-badge">TODAY</div>' : '') +
       '<div class="w-tile-day">'+DAYS_SHORT[d-1]+'</div>'+
-      (avgT!==null
-        ? '<div class="w-tile-temp">'+avgT+'°</div>'+
-          '<div class="w-tile-hum">'+avgH+'%</div>'+
-          '<div class="w-tile-cnt">'+data.t.length+'/8</div>'
+      (maxT !== null
+        ? '<div class="w-tile-temp">'+maxT+'°</div>'+
+          '<div class="w-tile-hum">'+maxH+'%</div>'+
+          '<div class="w-tile-cnt">'+offRec+'/8</div>'
         : '<div class="w-tile-dash">'+(isFut?'···':'—')+'</div>');
     wrap.appendChild(tile);
   }
 }
 
 /* ── RENDER: WEEKLY TABLE ── */
-function renderWeekTable(bd) {
+// Para dias pasados: usa solo registros oficiales (bd).
+// Para hoy: usa bdAll para reflejar el maximo en tiempo real.
+function renderWeekTable(bd, bdAll) {
   const dh = todayWD();
   const tb = document.getElementById('weekTb');
   tb.innerHTML = '';
   let any = false;
   for (let d=1; d<=7; d++) {
-    const dt=bd[d], isToday=d===dh, isFut=d>dh;
-    const tr=document.createElement('tr');
-    if (!dt||!dt.t.length) {
+    const isToday = d === dh;
+    const isFut   = d > dh;
+    const dt      = bd[d];
+    // Para hoy, enriquecer con todos los feeds para max/min en tiempo real
+    const dtLive  = isToday ? (bdAll[d] || dt) : dt;
+    const tr = document.createElement('tr');
+    if (!dtLive || !dtLive.t || !dtLive.t.length) {
       tr.innerHTML = `<td style="color:${isToday?'var(--green)':''};font-weight:${isToday?600:400}">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td><td class="c-muted" colspan="7">${isFut?'Pending':'—'}</td>`;
     } else {
-      any=true;
-      const t=dt.t, h=dt.h;
-      const avgT=avg(t).toFixed(1), maxT=Math.max(...t).toFixed(1), minT=Math.min(...t).toFixed(1);
-      const avgH=avg(h).toFixed(1), maxH=Math.max(...h).toFixed(1), minH=Math.min(...h).toFixed(1);
+      any = true;
+      const t = dtLive.t, h = dtLive.h;
+      // Avg solo de registros oficiales si existen, sino de todos los feeds
+      const tOff = dt && dt.t.length ? dt.t : t;
+      const hOff = dt && dt.h.length ? dt.h : h;
+      const avgT = avg(tOff).toFixed(1);
+      const avgH = avg(hOff).toFixed(1);
+      const maxT = Math.max(...t).toFixed(1);
+      const minT = Math.min(...t).toFixed(1);
+      const maxH = Math.max(...h).toFixed(1);
+      const minH = Math.min(...h).toFixed(1);
+      const offRec = dt ? dt.t.length : 0;
       tr.innerHTML = `
         <td style="color:${isToday?'var(--green)':'var(--text)'};font-weight:600">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
         <td class="mono c-coral">${avgT}</td>
@@ -928,7 +972,7 @@ function renderWeekTable(bd) {
         <td class="mono c-teal">${avgH}</td>
         <td class="mono" style="color:#8fd4e8">${maxH}</td>
         <td class="mono c-teal">${minH}</td>
-        <td class="mono c-muted">${t.length}/8</td>`;
+        <td class="mono c-muted">${offRec}/8</td>`;
     }
     tb.appendChild(tr);
   }
@@ -1071,12 +1115,13 @@ async function fetchData() {
 
     document.getElementById('lastUpd').textContent = fmtDT(last.created_at);
     document.getElementById('feedAge').textContent = ago(last.created_at);
-    const bd = byDay(feeds);
+    const bd    = byDay(feeds);
+    const bdAll = byDayAllFeeds(feeds);
 
     if (ok) renderHero(tv, hv, bd);
     renderHourly(bd);
-    renderTiles(bd);
-    renderWeekTable(bd);
+    renderTiles(bd, bdAll);
+    renderWeekTable(bd, bdAll);
     renderCharts(bd);
 
   } catch(e) {
