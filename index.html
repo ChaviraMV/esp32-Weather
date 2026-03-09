@@ -730,18 +730,34 @@ footer a { color:var(--green2); text-decoration:none; }
      field1 = Temperature
      field2 = Humidity
      field3 = WeekDay (1=Mon...7=Sun)  sent by ESP32
-     field4 = Record number of day (1-8)
+     field4 = Hour of day (0-23)  — heartbeats have no field3/field4
    ============================================================ */
 const CH_ID      = "3284038";
 const RD_KEY     = "IV68XDIEZ0KAVM7N";
-// RESULTS: cuantas entradas descargar de ThingSpeak.
-// Con heartbeat cada 30s = ~2880 entradas/dia de heartbeats + 8 registros reales.
-// ThingSpeak plan gratuito permite maximo 8000 por request.
-// Usamos 8000 para cubrir varios dias y no perder registros reales.
-const RESULTS    = 8000;
+// Pedir datos por RANGO DE FECHA (lunes a domingo de la semana actual)
+// en lugar de por cantidad de resultados.
+// Esto garantiza que SIEMPRE se descarguen todos los registros de la semana,
+// sin importar cuantos heartbeats haya en medio.
 const TZ         = "America/Tijuana";
 const OFFLINE_S  = 10800 * 1.5;
 const TICK_MS    = 5 * 60 * 1000;
+
+// Devuelve { start, end } en formato ISO para la semana actual (Lun-Dom) en TZ
+function weekRange() {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
+  const wd  = now.getDay() === 0 ? 7 : now.getDay(); // 1=Lun, 7=Dom
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - wd + 1);
+  mon.setHours(0, 0, 0, 0);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23, 59, 59, 0);
+  // ThingSpeak espera UTC
+  return {
+    start: mon.toISOString().slice(0, 19).replace('T', '%20'),
+    end:   sun.toISOString().slice(0, 19).replace('T', '%20')
+  };
+}
 
 const DAYS_LONG  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DAYS_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
@@ -793,15 +809,16 @@ function setSensor(state, label) {
   el.style.color = state==='on' ? 'var(--green)' : state==='off' ? 'var(--pink)' : 'var(--text2)';
 }
 
-/* ── GROUP BY DAY — solo registros oficiales (field3=1-7, field4=1-8) ── */
-// Usado para: tabla semanal, hourly, charts
+/* ── GROUP BY DAY — solo registros oficiales (field3=1-7, field4=0-23) ── */
+// field3 = weekday (1-7), field4 = hora del dia (0-23)
+// Heartbeats no tienen field3/field4 validos
 function byDay(arr) {
   const r = {};
   arr.forEach(f => {
     const d = parseInt(f.field3);
     const n = parseInt(f.field4);
     if (isNaN(d) || d < 1 || d > 7) return;
-    if (isNaN(n) || n < 1 || n > 8) return;
+    if (isNaN(n) || n < 0 || n > 23) return;  // hora 0-23
     if (!r[d]) r[d] = { t:[], h:[], feeds:[] };
     const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
     if (!isNaN(tv)) r[d].t.push(tv);
@@ -859,12 +876,15 @@ function renderHero(tv, hv, bd) {
 function renderHourly(bd) {
   const dh = todayWD();
 
-  // Only include feeds where field3 matches today's weekday exactly (real records, not heartbeats)
-  const reg = feeds.filter(f => parseInt(f.field3) === dh);
-  const n   = reg.length;
+  // Registros reales de hoy: field3 = weekday de hoy, field4 = hora valida 0-23
+  const reg = feeds.filter(f => {
+    const d = parseInt(f.field3), h = parseInt(f.field4);
+    return d === dh && !isNaN(h) && h >= 0 && h <= 23;
+  });
+  const n = reg.length;
 
   document.getElementById('hourlyMeta').textContent =
-    DAYS_LONG[dh-1] + ' · ' + n + ' / 8 records';
+    DAYS_LONG[dh-1] + ' · ' + n + ' / 24 records';
 
   const tb = document.getElementById('hourlyBody');
   tb.innerHTML = '';
@@ -917,7 +937,7 @@ function renderTiles(bd, bdAll) {
     const maxT = hasDat ? Math.max(...src.t).toFixed(1) : null;
     const maxH = hasDat ? Math.max(...src.h).toFixed(1) : null;
 
-    // Contar solo registros oficiales para el indicador X/8
+    // Contar solo registros oficiales para el indicador X/24
     const offRec = bd[d] ? bd[d].t.length : 0;
 
     const tile = document.createElement('div');
@@ -928,7 +948,7 @@ function renderTiles(bd, bdAll) {
       (maxT !== null
         ? '<div class="w-tile-temp">'+maxT+'°</div>'+
           '<div class="w-tile-hum">'+maxH+'%</div>'+
-          '<div class="w-tile-cnt">'+offRec+'/8</div>'
+          '<div class="w-tile-cnt">'+offRec+'/24</div>'
         : '<div class="w-tile-dash">'+(isFut?'···':'—')+'</div>');
     wrap.appendChild(tile);
   }
@@ -972,7 +992,7 @@ function renderWeekTable(bd, bdAll) {
         <td class="mono c-teal">${avgH}</td>
         <td class="mono" style="color:#8fd4e8">${maxH}</td>
         <td class="mono c-teal">${minH}</td>
-        <td class="mono c-muted">${offRec}/8</td>`;
+        <td class="mono c-muted">${offRec}/24</td>`;
     }
     tb.appendChild(tr);
   }
@@ -1094,20 +1114,41 @@ function renderCharts(bd) {
 }
 
 /* ── FETCH ── */
+// Hace DOS peticiones a ThingSpeak:
+// 1. Por rango de fecha (toda la semana actual) — captura todos los registros oficiales
+// 2. Las ultimas 500 entradas — captura los heartbeats recientes para max/min en tiempo real
+// Combina ambas y elimina duplicados por entry_id.
 async function fetchData() {
   setSensor('wait','LOADING...');
   try {
-    const json = await (await fetch(
-      `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=${RESULTS}`
-    )).json();
-    feeds = json.feeds || [];
+    const { start, end } = weekRange();
+
+    // Peticion 1: toda la semana por rango de fecha (registros oficiales garantizados)
+    const urlWeek = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&start=${start}&end=${end}&results=8000`;
+    // Peticion 2: ultimos 500 feeds (heartbeats recientes para max/min live)
+    const urlLive = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=500`;
+
+    const [jsonWeek, jsonLive] = await Promise.all([
+      fetch(urlWeek).then(r => r.json()),
+      fetch(urlLive).then(r => r.json())
+    ]);
+
+    // Combinar y deduplicar por entry_id
+    const combined = [...(jsonWeek.feeds || []), ...(jsonLive.feeds || [])];
+    const seen = new Set();
+    feeds = combined.filter(f => {
+      if (seen.has(f.entry_id)) return false;
+      seen.add(f.entry_id);
+      return true;
+    }).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
     if (!feeds.length) { setSensor('off','NO DATA'); return; }
 
-    const last  = feeds[feeds.length-1];
-    const tv    = parseFloat(last.field1), hv=parseFloat(last.field2);
-    const ok    = !isNaN(tv)&&!isNaN(hv);
-    const sec   = (Date.now()-new Date(last.created_at))/1000;
-    const online= ok && sec<=OFFLINE_S;
+    const last   = feeds[feeds.length-1];
+    const tv     = parseFloat(last.field1), hv = parseFloat(last.field2);
+    const ok     = !isNaN(tv) && !isNaN(hv);
+    const sec    = (Date.now() - new Date(last.created_at)) / 1000;
+    const online = ok && sec <= OFFLINE_S;
 
     setSensor(online?'on':'off',
       online?'SENSOR ONLINE':
