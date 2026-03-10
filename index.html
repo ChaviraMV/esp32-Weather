@@ -454,6 +454,33 @@ tbody tr:hover td { background: rgba(0,255,136,.03); }
 }
 .dl-btn:hover { background:rgba(0,255,136,.2); box-shadow:var(--glow-g); }
 
+/* ─── FULL HISTORY ─── */
+.fh-bar {
+  display:flex; align-items:center;
+  padding:18px 24px; cursor:pointer;
+  border-radius: var(--r);
+  transition: background .15s;
+  user-select:none;
+}
+.fh-bar:hover { background: rgba(0,255,136,.05); }
+.fh-week-card {
+  border-top: 1px solid #1a2f5a;
+  padding: 0;
+}
+.fh-week-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 14px 20px 6px;
+  cursor: pointer;
+}
+.fh-week-hdr:hover { background: rgba(255,255,255,.02); }
+.fh-week-title {
+  font-family:'Space Mono',monospace; font-size:11px;
+  letter-spacing:1.5px; color:var(--green); text-transform:uppercase;
+}
+.fh-week-meta { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; }
+.fh-week-body { padding: 0 16px 12px; }
+.fh-toggle { font-size:12px; color:var(--muted); margin-left:12px; transition:transform .25s; }
+
 /* ─── THINGSPEAK CARDS ─── */
 .ts-card {
   background: #0f1f44;
@@ -612,6 +639,21 @@ footer a { color:var(--green2); text-decoration:none; }
     <div class="s-card" style="text-align:center;padding:24px">
       <span class="spin"></span> Loading previous weeks...
     </div>
+  </div>
+
+  <!-- FULL HISTORY -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-icon"></div>
+    <div class="sec-hdr-title">Full History</div>
+    <div class="sec-hdr-line"></div>
+  </div>
+  <div class="s-card mb-5" style="padding:0">
+    <div class="fh-bar" onclick="toggleFullHistory()">
+      <span id="fhIcon" style="font-size:18px;margin-right:10px;transition:transform .3s">▶</span>
+      <span style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:2px;color:var(--green)">LOAD ALL RECORDED DATA</span>
+      <span id="fhMeta" style="margin-left:auto;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace"></span>
+    </div>
+    <div id="fullHistWrap" style="display:none;padding:0 0 8px"></div>
   </div>
 
   <!-- THINGSPEAK LIVE CHARTS -->
@@ -1010,6 +1052,190 @@ async function fetchPrevWeeks() {
   if (!anyData) {
     wrap.innerHTML = '<div class="s-card" style="text-align:center;padding:24px;color:var(--muted)">No previous week data found in ThingSpeak.</div>';
   }
+}
+
+/* ── FULL HISTORY ── */
+let fhLoaded = false;
+let fhOpen   = false;
+
+function toggleFullHistory() {
+  const wrap = document.getElementById('fullHistWrap');
+  const icon = document.getElementById('fhIcon');
+  fhOpen = !fhOpen;
+  wrap.style.display = fhOpen ? 'block' : 'none';
+  icon.style.transform = fhOpen ? 'rotate(90deg)' : 'rotate(0deg)';
+  if (fhOpen && !fhLoaded) fetchFullHistory();
+}
+
+// Agrupa todos los feeds por ISO week (YYYY-Www)
+function isoWeekKey(dateStr) {
+  const d  = toLoc(dateStr);
+  const tmp = new Date(d);
+  tmp.setHours(0, 0, 0, 0);
+  tmp.setDate(tmp.getDate() + 3 - ((tmp.getDay() + 6) % 7));
+  const w1 = new Date(tmp.getFullYear(), 0, 4);
+  const wn = 1 + Math.round(((tmp - w1) / 86400000 - 3 + ((w1.getDay() + 6) % 7)) / 7);
+  return `${tmp.getFullYear()}-W${String(wn).padStart(2,'0')}`;
+}
+
+// Etiqueta legible para una semana dado su primer feed
+function weekLabel(monDate) {
+  const sun = new Date(monDate);
+  sun.setDate(monDate.getDate() + 6);
+  return `${p2(monDate.getDate())} ${MONTHS[monDate.getMonth()]} — ${p2(sun.getDate())} ${MONTHS[sun.getMonth()]} ${sun.getFullYear()}`;
+}
+
+function weekMonStr(monDate) {
+  return `${p2(monDate.getMonth()+1)}/${p2(monDate.getDate())}/${monDate.getFullYear()}`;
+}
+
+// Obtiene el lunes de la semana ISO de un feed
+function getMonday(dateStr) {
+  const d = toLoc(dateStr);
+  const day = d.getDay() || 7;
+  const mon = new Date(d);
+  mon.setDate(d.getDate() - day + 1);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+
+async function fetchFullHistory() {
+  const wrap  = document.getElementById('fullHistWrap');
+  const meta  = document.getElementById('fhMeta');
+  wrap.innerHTML = '<div style="padding:20px;text-align:center"><span class="spin"></span> Fetching all data from ThingSpeak...</div>';
+
+  try {
+    // Una sola peticion: todos los registros del canal (max 8000 por llamada)
+    // Usamos results=8000 que es el maximo de ThingSpeak
+    const url = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=8000`;
+    const json = await fetch(url).then(r => r.json());
+    const allFeeds = json.feeds || [];
+
+    if (!allFeeds.length) {
+      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No data found.</div>';
+      return;
+    }
+
+    // Agrupar por semana ISO
+    const weekMap = {};  // key → { feeds:[], monday: Date }
+    allFeeds.forEach(f => {
+      const key = isoWeekKey(f.created_at);
+      if (!weekMap[key]) weekMap[key] = { feeds:[], monday: getMonday(f.created_at) };
+      weekMap[key].feeds.push(f);
+    });
+
+    // Ordenar semanas de más reciente a más antigua
+    const weekKeys = Object.keys(weekMap).sort((a,b) => b.localeCompare(a));
+
+    // Semana actual — skip (ya está en Current Week)
+    const currentKey = isoWeekKey(new Date().toISOString());
+    const histKeys   = weekKeys.filter(k => k !== currentKey);
+
+    meta.textContent = `${histKeys.length} week${histKeys.length!==1?'s':''} · ${allFeeds.length} total entries`;
+    wrap.innerHTML = '';
+    fhLoaded = true;
+
+    histKeys.forEach((key, idx) => {
+      const { feeds: wf, monday } = weekMap[key];
+      const bd    = byDayPrev(wf);
+      const label = weekLabel(monday);
+      const monS  = weekMonStr(monday);
+      const csvId = `fh-csv-${idx}`;
+      const bodyId= `fh-body-${idx}`;
+
+      // Calcular resumen rápido de la semana para el header
+      const allT = wf.map(f=>parseFloat(f.field1)).filter(v=>!isNaN(v));
+      const allH = wf.map(f=>parseFloat(f.field2)).filter(v=>!isNaN(v));
+      const wAvgT = allT.length ? avg(allT).toFixed(1) : '—';
+      const wMaxT = allT.length ? Math.max(...allT).toFixed(1) : '—';
+      const wMinT = allT.length ? Math.min(...allT).toFixed(1) : '—';
+
+      // Filas de la tabla
+      let rows = '';
+      for (let d = 1; d <= 7; d++) {
+        const dt = bd[d];
+        if (!dt || !dt.t.length) {
+          rows += `<tr><td style="color:var(--text2)">${DAYS_LONG[d-1]}</td><td class="c-muted" colspan="7">—</td></tr>`;
+        } else {
+          const t = dt.t, h = dt.h;
+          rows += `<tr>
+            <td style="font-weight:600">${DAYS_LONG[d-1]}</td>
+            <td class="mono c-coral">${avg(t).toFixed(1)}</td>
+            <td class="mono" style="color:var(--coral2)">${Math.max(...t).toFixed(1)}</td>
+            <td class="mono c-teal">${Math.min(...t).toFixed(1)}</td>
+            <td class="mono c-teal">${avg(h).toFixed(1)}</td>
+            <td class="mono" style="color:#8fd4e8">${Math.max(...h).toFixed(1)}</td>
+            <td class="mono c-teal">${Math.min(...h).toFixed(1)}</td>
+            <td class="mono c-muted">${dt.official}</td>
+          </tr>`;
+        }
+      }
+
+      const card = document.createElement('div');
+      card.className = 'fh-week-card';
+      card.innerHTML = `
+        <div class="fh-week-hdr" onclick="toggleFHWeek('${bodyId}', this)">
+          <div>
+            <span class="fh-week-title">&#9679; Week of ${monS}</span>
+            <span style="margin-left:14px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace">${label}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <span style="font-size:11px;color:var(--coral);font-family:'Space Mono',monospace">
+              avg ${wAvgT}° &nbsp; ▲${wMaxT}° &nbsp; ▼${wMinT}°
+            </span>
+            <span class="fh-toggle">▶</span>
+          </div>
+        </div>
+        <div id="${bodyId}" class="fh-week-body" style="display:none">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>Day</th>
+                <th>Avg °C</th><th>Max °C</th><th>Min °C</th>
+                <th>Avg %</th><th>Max %</th><th>Min %</th>
+                <th>Records</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          <button class="dl-btn" id="${csvId}">&#8595; DOWNLOAD CSV</button>
+        </div>`;
+      wrap.appendChild(card);
+
+      // CSV handler
+      const wfSnap = [...wf];
+      document.getElementById(csvId).addEventListener('click', () => {
+        const bd2 = byDayPrev(wfSnap);
+        let csv = 'Day,Avg Temp (C),Max Temp,Min Temp,Avg Hum (%),Max Hum,Min Hum,Records\n';
+        for (let d = 1; d <= 7; d++) {
+          const dt2 = bd2[d];
+          if (!dt2||!dt2.t.length) { csv+=`"${DAYS_LONG[d-1]}","—","—","—","—","—","—","0"\n`; continue; }
+          const t=dt2.t, h=dt2.h;
+          csv+=`"${DAYS_LONG[d-1]}","${avg(t).toFixed(1)}","${Math.max(...t).toFixed(1)}","${Math.min(...t).toFixed(1)}","${avg(h).toFixed(1)}","${Math.max(...h).toFixed(1)}","${Math.min(...h).toFixed(1)}","${dt2.official}"\n`;
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+        a.download = `climalog_${monS.replace(/\//g,'-')}.csv`;
+        a.click();
+      });
+    });
+
+    if (!histKeys.length) {
+      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No previous weeks found yet.</div>';
+    }
+
+  } catch(e) {
+    console.error(e);
+    wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--pink)">Error loading history. Try again.</div>';
+  }
+}
+
+function toggleFHWeek(bodyId, hdr) {
+  const body   = document.getElementById(bodyId);
+  const toggle = hdr.querySelector('.fh-toggle');
+  const open   = body.style.display === 'none';
+  body.style.display  = open ? 'block' : 'none';
+  toggle.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
 }
 
 /* ── FETCH ── */
