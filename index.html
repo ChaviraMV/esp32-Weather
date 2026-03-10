@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CLIMALOG · ESP32 DHT Monitor</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
 <style>
 /* =====================================================
    CLIMALOG  —  Space / Sci-Fi dark dashboard
@@ -570,65 +570,6 @@ footer a { color:var(--green2); text-decoration:none; }
     </div>
   </div>
 
-  <!-- HOURLY CHARTS -->
-  <div class="sec-hdr">
-    <div class="sec-hdr-icon"></div>
-    <div class="sec-hdr-title">Hourly Charts</div>
-    <div class="sec-hdr-line"></div>
-  </div>
-  <div class="s-card mb-5">
-    <div class="chart-pair">
-      <div class="chart-box">
-        <div class="chart-box-title"><span class="dot-t">&#9135;</span> TEMPERATURE &middot; LAST 6H</div>
-        <canvas id="cTline" height="200"></canvas>
-      </div>
-      <div class="chart-box">
-        <div class="chart-box-title"><span class="dot-h">&#128167;</span> HUMIDITY &middot; LAST 6H</div>
-        <canvas id="cHline" height="200"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- WEEKLY CHARTS -->
-  <div class="sec-hdr">
-    <div class="sec-hdr-icon"></div>
-    <div class="sec-hdr-title">Weekly Charts</div>
-    <div class="sec-hdr-line"></div>
-  </div>
-  <div class="s-card mb-5">
-    <div class="chart-pair">
-      <div class="chart-box">
-        <div class="chart-box-title"><span class="dot-t">&#9135;</span> TEMPERATURE &middot; CURRENT WEEK</div>
-        <canvas id="cT" height="220"></canvas>
-      </div>
-      <div class="chart-box">
-        <div class="chart-box-title"><span class="dot-h">&#128167;</span> HUMIDITY &middot; CURRENT WEEK</div>
-        <canvas id="cH" height="220"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- HOURLY AVERAGES TABLE -->
-  <div class="sec-hdr">
-    <div class="sec-hdr-icon"></div>
-    <div class="sec-hdr-title">Hourly Averages</div>
-    <div class="sec-hdr-line"></div>
-  </div>
-  <div class="s-card mb-5">
-    <div class="s-card-head">
-      <div class="s-card-title">&#9679; Last 8 Recorded Hours (today)</div>
-      <span class="s-card-meta" id="hourlyMeta">—</span>
-    </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>#</th><th>Hour</th><th>Temp °C</th><th>Hum %</th></tr></thead>
-        <tbody id="hourlyBody">
-          <tr><td colspan="4" class="empty-row"><span class="spin"></span>Loading hourly records...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- CURRENT WEEK TABLE -->
   <div class="sec-hdr">
     <div class="sec-hdr-icon"></div>
@@ -659,6 +600,18 @@ footer a { color:var(--green2); text-decoration:none; }
       </table>
     </div>
     <button class="dl-btn" onclick="downloadCSV()">&#8595; DOWNLOAD CSV</button>
+  </div>
+
+  <!-- PREVIOUS WEEKS -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-icon"></div>
+    <div class="sec-hdr-title">Previous Weeks</div>
+    <div class="sec-hdr-line"></div>
+  </div>
+  <div id="prevWeeksWrap" class="mb-5">
+    <div class="s-card" style="text-align:center;padding:24px">
+      <span class="spin"></span> Loading previous weeks...
+    </div>
   </div>
 
   <!-- THINGSPEAK LIVE CHARTS -->
@@ -725,39 +678,18 @@ footer a { color:var(--green2); text-decoration:none; }
 
 <script>
 /* ============================================================
-   CLIMALOG — Dashboard JS
-   ThingSpeak fields:
-     field1 = Temperature
-     field2 = Humidity
-     field3 = WeekDay (1=Mon...7=Sun)  sent by ESP32
-     field4 = Hour of day (0-23)  — heartbeats have no field3/field4
+   CLIMALOG — Dashboard JS  (solo ThingSpeak, limpio)
+   field1 = Temperatura
+   field2 = Humedad
+   field3 = Weekday 1=Lun...7=Dom  (registros oficiales)
+   field4 = Hora 0-23              (registros oficiales)
+   Heartbeats: solo field1+field2, sin field3/field4
    ============================================================ */
-const CH_ID      = "3284038";
-const RD_KEY     = "IV68XDIEZ0KAVM7N";
-// Pedir datos por RANGO DE FECHA (lunes a domingo de la semana actual)
-// en lugar de por cantidad de resultados.
-// Esto garantiza que SIEMPRE se descarguen todos los registros de la semana,
-// sin importar cuantos heartbeats haya en medio.
-const TZ         = "America/Tijuana";
-const OFFLINE_S  = 10800 * 1.5;
-const TICK_MS    = 5 * 60 * 1000;
-
-// Devuelve { start, end } en formato ISO para la semana actual (Lun-Dom) en TZ
-function weekRange() {
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
-  const wd  = now.getDay() === 0 ? 7 : now.getDay(); // 1=Lun, 7=Dom
-  const mon = new Date(now);
-  mon.setDate(now.getDate() - wd + 1);
-  mon.setHours(0, 0, 0, 0);
-  const sun = new Date(mon);
-  sun.setDate(mon.getDate() + 6);
-  sun.setHours(23, 59, 59, 0);
-  // ThingSpeak espera UTC
-  return {
-    start: mon.toISOString().slice(0, 19).replace('T', '%20'),
-    end:   sun.toISOString().slice(0, 19).replace('T', '%20')
-  };
-}
+const CH_ID     = "3284038";
+const RD_KEY    = "IV68XDIEZ0KAVM7N";
+const TZ        = "America/Tijuana";
+const OFFLINE_S = 3600 * 1.5;
+const TICK_MS   = 5 * 60 * 1000;
 
 const DAYS_LONG  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DAYS_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
@@ -792,13 +724,6 @@ const ago     = s => {
 };
 const todayWD = () => { const d=new Date(new Date().toLocaleString('en-US',{timeZone:TZ})); return d.getDay()===0?7:d.getDay(); };
 const avg     = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
-const isoWeekStart = () => {
-  const now = new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
-  const wd  = now.getDay() || 7;
-  const mon = new Date(now);
-  mon.setDate(now.getDate()-wd+1);
-  return `${p2(mon.getMonth()+1)}/${p2(mon.getDate())}/${mon.getFullYear()}`;
-};
 
 /* ── STATUS ── */
 function setSensor(state, label) {
@@ -809,16 +734,27 @@ function setSensor(state, label) {
   el.style.color = state==='on' ? 'var(--green)' : state==='off' ? 'var(--pink)' : 'var(--text2)';
 }
 
-/* ── GROUP BY DAY — solo registros oficiales (field3=1-7, field4=0-23) ── */
-// field3 = weekday (1-7), field4 = hora del dia (0-23)
-// Heartbeats no tienen field3/field4 validos
+/* ── RANGO DE SEMANA ACTUAL (para query ThingSpeak por fecha) ── */
+function weekRange() {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
+  const wd  = now.getDay() === 0 ? 7 : now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate()-wd+1); mon.setHours(0,0,0,0);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);    sun.setHours(23,59,59,0);
+  return {
+    start: mon.toISOString().slice(0,19).replace('T','%20'),
+    end:   sun.toISOString().slice(0,19).replace('T','%20')
+  };
+}
+
+/* ── GROUP BY DAY — registros oficiales (field3=1-7, field4=0-23) ── */
+// Los heartbeats no tienen field3/field4 válidos → quedan excluidos
 function byDay(arr) {
   const r = {};
   arr.forEach(f => {
     const d = parseInt(f.field3);
     const n = parseInt(f.field4);
-    if (isNaN(d) || d < 1 || d > 7) return;
-    if (isNaN(n) || n < 0 || n > 23) return;  // hora 0-23
+    if (isNaN(d) || d < 1 || d > 7)  return;
+    if (isNaN(n) || n < 0 || n > 23) return;
     if (!r[d]) r[d] = { t:[], h:[], feeds:[] };
     const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
     if (!isNaN(tv)) r[d].t.push(tv);
@@ -828,15 +764,13 @@ function byDay(arr) {
   return r;
 }
 
-/* ── GROUP BY DAY — todos los feeds incluyendo heartbeats ── */
-// Usado para: calcular max/min en tiempo real del dia actual
-// Los heartbeats no tienen field3/field4 validos, se agrupan por timestamp
+/* ── GROUP BY DAY — todos los feeds (incluye heartbeats) ── */
+// Usado para max/min en tiempo real del día de hoy
 function byDayAllFeeds(arr) {
   const r = {};
   arr.forEach(f => {
     const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
-    if (isNaN(tv) && isNaN(hv)) return; // sin datos utiles
-    // Usar field3 si es valido, sino derivar del timestamp
+    if (isNaN(tv) && isNaN(hv)) return;
     let d = parseInt(f.field3);
     if (isNaN(d) || d < 1 || d > 7) {
       const loc = toLoc(f.created_at);
@@ -850,74 +784,34 @@ function byDayAllFeeds(arr) {
 }
 
 /* ── RENDER: HERO CARDS ── */
-function renderHero(tv, hv, bd) {
+function renderHero(tv, hv, bdAll) {
   document.getElementById('hTemp').innerHTML = tv.toFixed(1)+'<span style="font-size:16px">°C</span>';
   document.getElementById('hHum').innerHTML  = hv.toFixed(1)+'<span style="font-size:16px">%</span>';
-
   document.getElementById('hTempStatus').innerHTML =
     '<div class="online-badge"><span class="dot dot-on" style="width:6px;height:6px"></span>Online</div>';
 
-  // Today max/min — use current day data from byDay
-  // Also include the live reading (tv, hv) in case it's the first record of the day
-  const dh = todayWD();
-  const dt = bd[dh];
+  const dh   = todayWD();
+  const dt   = bdAll[dh];
   const tArr = dt && dt.t.length ? [...dt.t, tv] : [tv];
   const hArr = dt && dt.h.length ? [...dt.h, hv] : [hv];
-
   const maxT = Math.max(...tArr), minT = Math.min(...tArr);
   const maxH = Math.max(...hArr), minH = Math.min(...hArr);
+
   document.getElementById('hTmax').innerHTML = maxT.toFixed(1)+'<span style="font-size:14px">°C</span>';
   document.getElementById('hTmin').innerHTML = minT.toFixed(1)+'<span style="font-size:14px">°C</span>';
-  document.getElementById('hHmax').textContent = String.fromCharCode(9650)+' '+maxH.toFixed(1)+' %';
-  document.getElementById('hHmin').textContent = String.fromCharCode(9660)+' '+minH.toFixed(1)+' %';
+  document.getElementById('hHmax').textContent = '▲ '+maxH.toFixed(1)+' %';
+  document.getElementById('hHmin').textContent = '▼ '+minH.toFixed(1)+' %';
 }
 
-/* ── RENDER: HOURLY TABLE (today's records only, up to 8) ── */
-function renderHourly(bd) {
-  const dh = todayWD();
-
-  // Registros reales de hoy: field3 = weekday de hoy, field4 = hora valida 0-23
-  const reg = feeds.filter(f => {
-    const d = parseInt(f.field3), h = parseInt(f.field4);
-    return d === dh && !isNaN(h) && h >= 0 && h <= 23;
-  });
-  const n = reg.length;
-
-  document.getElementById('hourlyMeta').textContent =
-    DAYS_LONG[dh-1] + ' · ' + n + ' / 24 records';
-
-  const tb = document.getElementById('hourlyBody');
-  tb.innerHTML = '';
-  if (!n) {
-    tb.innerHTML = '<tr><td colspan="4" class="empty-row">No records for today yet</td></tr>';
-    return;
-  }
-  // Show most recent first
-  const sorted = [...reg].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-  sorted.forEach((f, i) => {
-    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
-    const tc = tv > 30 ? 'c-coral' : tv < 18 ? 'c-teal' : '';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="mono c-muted">${sorted.length - i}</td>
-      <td class="mono">${fmtTime(f.created_at)}</td>
-      <td class="mono ${tc}">${isNaN(tv) ? '—' : tv.toFixed(1)}</td>
-      <td class="mono c-teal">${isNaN(hv) ? '—' : hv.toFixed(1)}</td>`;
-    tb.appendChild(tr);
-  });
-}
-
-/* ── RENDER: WEEKLY TILES ── */
-// Cada tile muestra el MAXIMO del dia.
-// Para dias pasados: maximo de los registros oficiales.
-// Para hoy: maximo de TODOS los feeds (registros + heartbeats) para reflejar
-//           el valor mas alto en tiempo real, aunque aun no se haya guardado.
+/* ── RENDER: TABLA HOURLY (registros de hoy) ── */
+/* ── RENDER: TILES SEMANALES ── */
 function renderTiles(bd, bdAll) {
   const dh  = todayWD();
   const now = new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
   const wd  = now.getDay()||7;
   const mon = new Date(now); mon.setDate(now.getDate()-wd+1);
-  const sun = new Date(now); sun.setDate(now.getDate()-wd+7);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+
   document.getElementById('weekOf').textContent =
     p2(mon.getMonth()+1)+'/'+p2(mon.getDate())+'/'+mon.getFullYear();
   document.getElementById('weekMeta').textContent =
@@ -926,26 +820,19 @@ function renderTiles(bd, bdAll) {
   const wrap = document.getElementById('tiles');
   wrap.innerHTML = '';
   for (let d=1; d<=7; d++) {
-    const isToday = d === dh;
-    const isFut   = d > dh;
-
-    // Para hoy usar bdAll (incluye heartbeats) — para dias pasados solo registros oficiales
-    const src   = isToday ? (bdAll[d] || bd[d]) : bd[d];
+    const isToday = d===dh, isFut = d>dh;
+    const src    = isToday ? (bdAll[d]||bd[d]) : bd[d];
     const hasDat = src && src.t && src.t.length;
-
-    // Mostrar MAXIMO del dia (si solo hay 1 valor, max = ese valor)
-    const maxT = hasDat ? Math.max(...src.t).toFixed(1) : null;
-    const maxH = hasDat ? Math.max(...src.h).toFixed(1) : null;
-
-    // Contar solo registros oficiales para el indicador X/24
+    const maxT   = hasDat ? Math.max(...src.t).toFixed(1) : null;
+    const maxH   = hasDat ? Math.max(...src.h).toFixed(1) : null;
     const offRec = bd[d] ? bd[d].t.length : 0;
 
     const tile = document.createElement('div');
     tile.className = 'w-tile'+(hasDat?' has-data':'')+(isToday?' is-today':'')+(isFut?' is-future':'');
     tile.innerHTML =
-      (isToday ? '<div class="w-tile-badge">TODAY</div>' : '') +
+      (isToday?'<div class="w-tile-badge">TODAY</div>':'')+
       '<div class="w-tile-day">'+DAYS_SHORT[d-1]+'</div>'+
-      (maxT !== null
+      (maxT!==null
         ? '<div class="w-tile-temp">'+maxT+'°</div>'+
           '<div class="w-tile-hum">'+maxH+'%</div>'+
           '<div class="w-tile-cnt">'+offRec+'/24</div>'
@@ -954,44 +841,32 @@ function renderTiles(bd, bdAll) {
   }
 }
 
-/* ── RENDER: WEEKLY TABLE ── */
-// Para dias pasados: usa solo registros oficiales (bd).
-// Para hoy: usa bdAll para reflejar el maximo en tiempo real.
+/* ── RENDER: TABLA SEMANAL ── */
 function renderWeekTable(bd, bdAll) {
   const dh = todayWD();
   const tb = document.getElementById('weekTb');
   tb.innerHTML = '';
   let any = false;
   for (let d=1; d<=7; d++) {
-    const isToday = d === dh;
-    const isFut   = d > dh;
-    const dt      = bd[d];
-    // Para hoy, enriquecer con todos los feeds para max/min en tiempo real
-    const dtLive  = isToday ? (bdAll[d] || dt) : dt;
+    const isToday = d===dh, isFut = d>dh;
+    const dt     = bd[d];
+    const dtLive = isToday ? (bdAll[d]||dt) : dt;
     const tr = document.createElement('tr');
-    if (!dtLive || !dtLive.t || !dtLive.t.length) {
+    if (!dtLive||!dtLive.t||!dtLive.t.length) {
       tr.innerHTML = `<td style="color:${isToday?'var(--green)':''};font-weight:${isToday?600:400}">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td><td class="c-muted" colspan="7">${isFut?'Pending':'—'}</td>`;
     } else {
       any = true;
-      const t = dtLive.t, h = dtLive.h;
-      // Avg solo de registros oficiales si existen, sino de todos los feeds
-      const tOff = dt && dt.t.length ? dt.t : t;
-      const hOff = dt && dt.h.length ? dt.h : h;
-      const avgT = avg(tOff).toFixed(1);
-      const avgH = avg(hOff).toFixed(1);
-      const maxT = Math.max(...t).toFixed(1);
-      const minT = Math.min(...t).toFixed(1);
-      const maxH = Math.max(...h).toFixed(1);
-      const minH = Math.min(...h).toFixed(1);
-      const offRec = dt ? dt.t.length : 0;
+      const t=dtLive.t, h=dtLive.h;
+      const tOff=dt&&dt.t.length?dt.t:t, hOff=dt&&dt.h.length?dt.h:h;
+      const offRec = dt?dt.t.length:0;
       tr.innerHTML = `
         <td style="color:${isToday?'var(--green)':'var(--text)'};font-weight:600">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
-        <td class="mono c-coral">${avgT}</td>
-        <td class="mono" style="color:var(--coral2)">${maxT}</td>
-        <td class="mono c-teal">${minT}</td>
-        <td class="mono c-teal">${avgH}</td>
-        <td class="mono" style="color:#8fd4e8">${maxH}</td>
-        <td class="mono c-teal">${minH}</td>
+        <td class="mono c-coral">${avg(tOff).toFixed(1)}</td>
+        <td class="mono" style="color:var(--coral2)">${Math.max(...t).toFixed(1)}</td>
+        <td class="mono c-teal">${Math.min(...t).toFixed(1)}</td>
+        <td class="mono c-teal">${avg(hOff).toFixed(1)}</td>
+        <td class="mono" style="color:#8fd4e8">${Math.max(...h).toFixed(1)}</td>
+        <td class="mono c-teal">${Math.min(...h).toFixed(1)}</td>
         <td class="mono c-muted">${offRec}/24</td>`;
     }
     tb.appendChild(tr);
@@ -999,156 +874,174 @@ function renderWeekTable(bd, bdAll) {
   if (!any) tb.innerHTML='<tr><td colspan="8" class="empty-row">No weekly data yet</td></tr>';
 }
 
-/* ── DARK CHART OPTIONS ── */
-function darkOpts(borderC, tooltipBorderC) {
+/* ── PREVIOUS WEEKS ── */
+// Calcula el rango Lun-Dom de una semana anterior (weeksAgo=1 = semana pasada)
+function prevWeekRange(weeksAgo) {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
+  const wd  = now.getDay() === 0 ? 7 : now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - wd + 1 - (weeksAgo * 7));
+  mon.setHours(0, 0, 0, 0);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23, 59, 59, 0);
+  const label = `${p2(mon.getDate())} ${MONTHS[mon.getMonth()]} — ${p2(sun.getDate())} ${MONTHS[sun.getMonth()]} ${sun.getFullYear()}`;
   return {
-    responsive:true,
-    plugins:{
-      legend:{ labels:{ color:'#8ab4d4', font:{family:'Space Mono',size:10}, boxWidth:14, padding:16 } },
-      tooltip:{
-        backgroundColor:'#0a1530', titleColor:'#c8e0f4', bodyColor:'#8ab4d4',
-        padding:12, cornerRadius:8, borderWidth:1, borderColor: tooltipBorderC||borderC
-      }
-    },
-    scales:{
-      x:{ ticks:{color:'#5a7a9a',font:{family:'Space Mono',size:8},maxRotation:0}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'} },
-      y:{ ticks:{color:'#5a7a9a',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'}, beginAtZero:false }
-    }
+    start: mon.toISOString().slice(0,19).replace('T','%20'),
+    end:   sun.toISOString().slice(0,19).replace('T','%20'),
+    label,
+    monStr: `${p2(mon.getMonth()+1)}/${p2(mon.getDate())}/${mon.getFullYear()}`
   };
 }
 
-/* ── RENDER: ALL CHARTS ── */
-function renderCharts(bd) {
-  const dh = todayWD();
-
-  /* ---------- HOURLY LINE CHARTS: last 6 records of today ---------- */
-  const todayFeeds = (bd[dh] && bd[dh].feeds) ? bd[dh].feeds : [];
-  const last6 = [...todayFeeds]
-    .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))
-    .slice(-6);
-  const hLabels = last6.map(f => fmtTime(f.created_at));
-  const hTdata  = last6.map(f => { const v=parseFloat(f.field1); return isNaN(v)?null:+v.toFixed(2); });
-  const hHdata  = last6.map(f => { const v=parseFloat(f.field2); return isNaN(v)?null:+v.toFixed(2); });
-
-  const lineOptsT = {
-    ...darkOpts('rgba(220,130,130,1)'),
-    scales: {
-      x: darkOpts().scales.x,
-      y: { ...darkOpts().scales.y, ticks:{color:'rgba(220,130,130,.8)',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'} }
+// Construye byDay desde feeds de una semana pasada
+// Para semanas pasadas usamos field3 si existe, sino el timestamp
+function byDayPrev(arr) {
+  const r = {};
+  arr.forEach(f => {
+    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
+    if (isNaN(tv) && isNaN(hv)) return;
+    // Registros oficiales tienen field3+field4 validos
+    let d = parseInt(f.field3);
+    const n = parseInt(f.field4);
+    const isOfficial = !isNaN(d) && d >= 1 && d <= 7 && !isNaN(n) && n >= 0 && n <= 23;
+    if (!isOfficial) {
+      // Heartbeat — derivar dia del timestamp
+      const loc = toLoc(f.created_at);
+      d = loc.getDay() === 0 ? 7 : loc.getDay();
     }
-  };
-  const lineOptsH = {
-    ...darkOpts('rgba(91,184,212,1)'),
-    scales: {
-      x: darkOpts().scales.x,
-      y: { ...darkOpts().scales.y, ticks:{color:'rgba(91,184,212,.8)',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'} }
+    if (d < 1 || d > 7) return;
+    if (!r[d]) r[d] = { t:[], h:[], official: 0 };
+    if (!isNaN(tv)) r[d].t.push(tv);
+    if (!isNaN(hv)) r[d].h.push(hv);
+    if (isOfficial) r[d].official++;
+  });
+  return r;
+}
+
+// Descarga y renderiza las semanas anteriores (hasta 4 semanas)
+async function fetchPrevWeeks() {
+  const wrap = document.getElementById('prevWeeksWrap');
+  wrap.innerHTML = '';
+  const PREV_WEEKS = 4;
+  let anyData = false;
+
+  for (let w = 1; w <= PREV_WEEKS; w++) {
+    const { start, end, label, monStr } = prevWeekRange(w);
+    try {
+      const url = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&start=${start}&end=${end}&results=8000`;
+      const json = await fetch(url).then(r => r.json());
+      const wFeeds = json.feeds || [];
+      if (!wFeeds.length) continue;
+
+      anyData = true;
+      const bd = byDayPrev(wFeeds);
+
+      // Construir tabla HTML de la semana
+      let rows = '';
+      for (let d = 1; d <= 7; d++) {
+        const dt      = bd[d];
+        const dayName = DAYS_LONG[d-1];
+        if (!dt || !dt.t.length) {
+          rows += `<tr><td style="color:var(--text2)">${dayName}</td><td class="c-muted" colspan="7">—</td></tr>`;
+        } else {
+          const t = dt.t, h = dt.h;
+          rows += `<tr>
+            <td style="font-weight:600">${dayName}</td>
+            <td class="mono c-coral">${avg(t).toFixed(1)}</td>
+            <td class="mono" style="color:var(--coral2)">${Math.max(...t).toFixed(1)}</td>
+            <td class="mono c-teal">${Math.min(...t).toFixed(1)}</td>
+            <td class="mono c-teal">${avg(h).toFixed(1)}</td>
+            <td class="mono" style="color:#8fd4e8">${Math.max(...h).toFixed(1)}</td>
+            <td class="mono c-teal">${Math.min(...h).toFixed(1)}</td>
+            <td class="mono c-muted">${dt.official}</td>
+          </tr>`;
+        }
+      }
+
+      // CSV de la semana
+      const csvId = `csv-week-${w}`;
+
+      const card = document.createElement('div');
+      card.className = 's-card mb-5';
+      card.innerHTML = `
+        <div class="s-card-head">
+          <div class="s-card-title">&#9679; Week of ${monStr}</div>
+          <span class="s-card-meta">${label}</span>
+        </div>
+        <div class="tbl-wrap" style="padding:0 16px 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Avg °C</th><th>Max °C</th><th>Min °C</th>
+                <th>Avg %</th><th>Max %</th><th>Min %</th>
+                <th>Records</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <button class="dl-btn" id="${csvId}">&#8595; DOWNLOAD CSV</button>`;
+      wrap.appendChild(card);
+
+      // CSV handler para esa semana
+      const wFeedsSnap = [...wFeeds];
+      document.getElementById(csvId).addEventListener('click', () => {
+        const bd2 = byDayPrev(wFeedsSnap);
+        let csv = 'Day,Avg Temp (C),Max Temp,Min Temp,Avg Hum (%),Max Hum,Min Hum,Records\n';
+        for (let d = 1; d <= 7; d++) {
+          const dt2 = bd2[d];
+          if (!dt2||!dt2.t.length) { csv+=`"${DAYS_LONG[d-1]}","—","—","—","—","—","—","0"\n`; continue; }
+          const t=dt2.t, h=dt2.h;
+          csv+=`"${DAYS_LONG[d-1]}","${avg(t).toFixed(1)}","${Math.max(...t).toFixed(1)}","${Math.min(...t).toFixed(1)}","${avg(h).toFixed(1)}","${Math.max(...h).toFixed(1)}","${Math.min(...h).toFixed(1)}","${dt2.official}"\n`;
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'}));
+        a.download = `climalog_week_${monStr.replace(/\//g,'-')}.csv`;
+        a.click();
+      });
+
+    } catch(e) {
+      console.warn(`Error cargando semana -${w}:`, e);
     }
-  };
+  }
 
-  if (charts.cTline) charts.cTline.destroy();
-  charts.cTline = new Chart(document.getElementById('cTline'), {
-    type:'line',
-    data:{ labels:hLabels, datasets:[{
-      label:'Temp °C', data:hTdata,
-      borderColor:'rgba(220,130,130,1)', backgroundColor:'rgba(200,80,80,.1)',
-      borderWidth:2, tension:.3, fill:true,
-      pointRadius:4, pointBackgroundColor:'rgba(220,130,130,1)',
-      pointBorderColor:'#1a2744', pointBorderWidth:2
-    }]},
-    options: lineOptsT
-  });
-
-  if (charts.cHline) charts.cHline.destroy();
-  charts.cHline = new Chart(document.getElementById('cHline'), {
-    type:'line',
-    data:{ labels:hLabels, datasets:[{
-      label:'Hum %', data:hHdata,
-      borderColor:'rgba(91,184,212,1)', backgroundColor:'rgba(91,184,212,.1)',
-      borderWidth:2, tension:.3, fill:true,
-      pointRadius:4, pointBackgroundColor:'rgba(91,184,212,1)',
-      pointBorderColor:'#1a2744', pointBorderWidth:2
-    }]},
-    options: lineOptsH
-  });
-
-  /* ---------- WEEKLY BAR CHARTS ---------- */
-  const labels = DAYS_LONG;
-  const tData  = Array.from({length:7},(_,i)=>{ const d=bd[i+1]; return d&&d.t.length?+avg(d.t).toFixed(1):null; });
-  const hData  = Array.from({length:7},(_,i)=>{ const d=bd[i+1]; return d&&d.h.length?+avg(d.h).toFixed(1):null; });
-
-  const barBase = (data, bgColor, borderColor, tooltipBorder) => ({
-    responsive:true,
-    plugins:{
-      legend:{ labels:{ color:'#8ab4d4', font:{family:'Space Mono',size:10}, boxWidth:14 } },
-      tooltip:{ backgroundColor:'#0a1530', titleColor:'#c8e0f4', bodyColor:'#8ab4d4', padding:12, cornerRadius:8, borderWidth:1, borderColor:tooltipBorder }
-    },
-    scales:{
-      x:{ ticks:{color:'#5a7a9a',font:{family:'Space Mono',size:9},maxRotation:0}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'} },
-      y:{ ticks:{color:'#5a7a9a',font:{family:'Space Mono',size:9}}, grid:{color:'rgba(30,60,100,.4)'}, border:{color:'rgba(30,60,100,.6)'}, beginAtZero:true }
-    }
-  });
-
-  if (charts.cT) charts.cT.destroy();
-  charts.cT = new Chart(document.getElementById('cT'), {
-    type:'bar',
-    data:{ labels, datasets:[{
-      label:'Temp °C', data:tData,
-      backgroundColor: tData.map(v=>v===null?'transparent':'rgba(200,100,100,.75)'),
-      borderColor:     tData.map(v=>v===null?'transparent':'rgba(220,130,130,1)'),
-      borderWidth:1, borderRadius:4, borderSkipped:false
-    }]},
-    options: barBase(tData,'rgba(200,100,100,.75)','rgba(220,130,130,1)','rgba(200,100,100,.5)')
-  });
-
-  if (charts.cH) charts.cH.destroy();
-  charts.cH = new Chart(document.getElementById('cH'), {
-    type:'bar',
-    data:{ labels, datasets:[{
-      label:'Hum %', data:hData,
-      backgroundColor: hData.map(v=>v===null?'transparent':'rgba(91,184,212,.7)'),
-      borderColor:     hData.map(v=>v===null?'transparent':'rgba(120,200,230,1)'),
-      borderWidth:1, borderRadius:4, borderSkipped:false
-    }]},
-    options: barBase(hData,'rgba(91,184,212,.7)','rgba(120,200,230,1)','rgba(91,184,212,.5)')
-  });
+  if (!anyData) {
+    wrap.innerHTML = '<div class="s-card" style="text-align:center;padding:24px;color:var(--muted)">No previous week data found in ThingSpeak.</div>';
+  }
 }
 
 /* ── FETCH ── */
-// Hace DOS peticiones a ThingSpeak:
-// 1. Por rango de fecha (toda la semana actual) — captura todos los registros oficiales
-// 2. Las ultimas 500 entradas — captura los heartbeats recientes para max/min en tiempo real
-// Combina ambas y elimina duplicados por entry_id.
 async function fetchData() {
   setSensor('wait','LOADING...');
   try {
     const { start, end } = weekRange();
-
-    // Peticion 1: toda la semana por rango de fecha (registros oficiales garantizados)
+    // Peticion 1: toda la semana por fecha (registros oficiales)
     const urlWeek = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&start=${start}&end=${end}&results=8000`;
     // Peticion 2: ultimos 500 feeds (heartbeats recientes para max/min live)
     const urlLive = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=500`;
 
     const [jsonWeek, jsonLive] = await Promise.all([
-      fetch(urlWeek).then(r => r.json()),
-      fetch(urlLive).then(r => r.json())
+      fetch(urlWeek).then(r=>r.json()),
+      fetch(urlLive).then(r=>r.json())
     ]);
 
     // Combinar y deduplicar por entry_id
-    const combined = [...(jsonWeek.feeds || []), ...(jsonLive.feeds || [])];
+    const combined = [...(jsonWeek.feeds||[]), ...(jsonLive.feeds||[])];
     const seen = new Set();
-    feeds = combined.filter(f => {
+    feeds = combined.filter(f=>{
       if (seen.has(f.entry_id)) return false;
-      seen.add(f.entry_id);
-      return true;
-    }).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      seen.add(f.entry_id); return true;
+    }).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
 
     if (!feeds.length) { setSensor('off','NO DATA'); return; }
 
     const last   = feeds[feeds.length-1];
     const tv     = parseFloat(last.field1), hv = parseFloat(last.field2);
     const ok     = !isNaN(tv) && !isNaN(hv);
-    const sec    = (Date.now() - new Date(last.created_at)) / 1000;
-    const online = ok && sec <= OFFLINE_S;
+    const sec    = (Date.now()-new Date(last.created_at))/1000;
+    const online = ok && sec<=OFFLINE_S;
 
     setSensor(online?'on':'off',
       online?'SENSOR ONLINE':
@@ -1156,14 +1049,13 @@ async function fetchData() {
 
     document.getElementById('lastUpd').textContent = fmtDT(last.created_at);
     document.getElementById('feedAge').textContent = ago(last.created_at);
+
     const bd    = byDay(feeds);
     const bdAll = byDayAllFeeds(feeds);
 
-    if (ok) renderHero(tv, hv, bd);
-    renderHourly(bd);
+    if (ok) renderHero(tv, hv, bdAll);
     renderTiles(bd, bdAll);
     renderWeekTable(bd, bdAll);
-    renderCharts(bd);
 
   } catch(e) {
     console.error(e);
@@ -1196,6 +1088,7 @@ setInterval(()=>{
 
 /* ── INIT ── */
 fetchData();
+fetchPrevWeeks();
 setInterval(fetchData, TICK_MS);
 </script>
 </body>
