@@ -863,11 +863,13 @@ function renderTiles(bd, bdAll) {
   wrap.innerHTML = '';
   for (let d=1; d<=7; d++) {
     const isToday = d===dh, isFut = d>dh;
-    const src    = isToday ? (bdAll[d]||bd[d]) : bd[d];
+    // Oficial primero; si no hay y no es futuro, usar heartbeats
+    const src    = bd[d] || (!isFut ? bdAll[d] : null);
     const hasDat = src && src.t && src.t.length;
     const maxT   = hasDat ? Math.max(...src.t).toFixed(1) : null;
     const maxH   = hasDat ? Math.max(...src.h).toFixed(1) : null;
     const offRec = bd[d] ? bd[d].t.length : 0;
+    const isHB   = hasDat && !bd[d]; // datos solo de heartbeat
 
     const tile = document.createElement('div');
     tile.className = 'w-tile'+(hasDat?' has-data':'')+(isToday?' is-today':'')+(isFut?' is-future':'');
@@ -877,7 +879,7 @@ function renderTiles(bd, bdAll) {
       (maxT!==null
         ? '<div class="w-tile-temp">'+maxT+'°</div>'+
           '<div class="w-tile-hum">'+maxH+'%</div>'+
-          '<div class="w-tile-cnt">'+offRec+'/24</div>'
+          '<div class="w-tile-cnt">'+(isHB?'~hb':offRec+'/24')+'</div>'
         : '<div class="w-tile-dash">'+(isFut?'···':'—')+'</div>');
     wrap.appendChild(tile);
   }
@@ -891,25 +893,28 @@ function renderWeekTable(bd, bdAll) {
   let any = false;
   for (let d=1; d<=7; d++) {
     const isToday = d===dh, isFut = d>dh;
-    const dt     = bd[d];
-    const dtLive = isToday ? (bdAll[d]||dt) : dt;
+    const dt      = bd[d];                          // registros oficiales
+    const dtAll   = bdAll[d];                        // todos los feeds (incluye heartbeats)
+    // Fuente de datos: oficial si existe, sino heartbeats para días pasados/hoy, nada para futuros
+    const dtLive  = dt || (!isFut ? dtAll : null);
     const tr = document.createElement('tr');
-    if (!dtLive||!dtLive.t||!dtLive.t.length) {
+    if (!dtLive || !dtLive.t || !dtLive.t.length) {
       tr.innerHTML = `<td style="color:${isToday?'var(--green)':''};font-weight:${isToday?600:400}">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td><td class="c-muted" colspan="7">${isFut?'Pending':'—'}</td>`;
     } else {
       any = true;
-      const t=dtLive.t, h=dtLive.h;
-      const tOff=dt&&dt.t.length?dt.t:t, hOff=dt&&dt.h.length?dt.h:h;
-      const offRec = dt?dt.t.length:0;
+      const t = dtLive.t, h = dtLive.h;
+      const offRec = dt ? dt.t.length : 0;
+      // Indicador: si no hay registros oficiales, mostrar (~) para señalar que son datos de heartbeat
+      const recLabel = dt ? `${offRec}/24` : '<span title="Estimated from heartbeats" style="color:var(--muted)">~hb</span>';
       tr.innerHTML = `
         <td style="color:${isToday?'var(--green)':'var(--text)'};font-weight:600">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
-        <td class="mono c-coral">${avg(tOff).toFixed(1)}</td>
+        <td class="mono c-coral">${avg(t).toFixed(1)}</td>
         <td class="mono" style="color:var(--coral2)">${Math.max(...t).toFixed(1)}</td>
         <td class="mono c-teal">${Math.min(...t).toFixed(1)}</td>
-        <td class="mono c-teal">${avg(hOff).toFixed(1)}</td>
+        <td class="mono c-teal">${avg(h).toFixed(1)}</td>
         <td class="mono" style="color:#8fd4e8">${Math.max(...h).toFixed(1)}</td>
         <td class="mono c-teal">${Math.min(...h).toFixed(1)}</td>
-        <td class="mono c-muted">${offRec}/24</td>`;
+        <td class="mono c-muted">${recLabel}</td>`;
     }
     tb.appendChild(tr);
   }
