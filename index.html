@@ -544,28 +544,80 @@ body::after {
 }
 
 /* ─── DATA TABLE ─── */
-.data-table-wrap { overflow-x: auto; }
+.data-table-wrap { overflow-x: auto; border-radius: 0 0 var(--r2) var(--r2); }
 table { width: 100%; border-collapse: collapse; }
+thead tr {
+  background: rgba(200,146,42,0.06);
+}
 thead th {
   font-family: 'DM Mono', monospace;
   font-size: 8px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--brass);
-  padding: 10px 16px;
-  border-bottom: 1px solid rgba(200,146,42,0.2);
-  background: rgba(0,0,0,0.2);
+  color: var(--brass2);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(200,146,42,0.18);
   text-align: left;
+  white-space: nowrap;
 }
+thead th:first-child { padding-left: 20px; }
+thead th:last-child  { padding-right: 20px; text-align: center; }
+
+tbody tr { transition: background 0.15s; }
+tbody tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+tbody tr:hover td { background: rgba(200,146,42,0.05) !important; }
+
 tbody td {
   font-size: 14px;
   font-weight: 400;
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--rim);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
   color: var(--text);
+  white-space: nowrap;
 }
+tbody td:first-child { padding-left: 20px; font-weight: 500; }
+tbody td:last-child  { padding-right: 20px; text-align: center; }
 tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* Stat pill for numeric cells */
+.stat-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+.pill-warm  { background: rgba(255,179,71,0.12); color: var(--warm2);  border: 1px solid rgba(255,179,71,0.2); }
+.pill-hot   { background: rgba(255,140,66,0.12); color: var(--warm);   border: 1px solid rgba(255,140,66,0.2); }
+.pill-cool  { background: rgba(66,184,255,0.10); color: var(--cool2);  border: 1px solid rgba(66,184,255,0.15); }
+.pill-steel { background: rgba(184,207,232,0.08); color: var(--steel2); border: 1px solid rgba(184,207,232,0.15); }
+.pill-muted { background: rgba(255,255,255,0.04); color: var(--text2);  border: 1px solid var(--rim); }
+
+/* Record count badge */
+.rec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--rim2);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text2);
+  letter-spacing: 1px;
+}
+.rec-bar {
+  display: inline-block;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(200,146,42,0.5), var(--brass));
+  vertical-align: middle;
+  min-width: 2px;
+  max-width: 40px;
+}
+
 .mono { font-family: 'DM Mono', monospace; font-size: 12px; }
 .c-warm  { color: var(--warm2); }
 .c-cool  { color: var(--cool2); }
@@ -582,46 +634,7 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
   letter-spacing: 2px;
 }
 
-/* ─── THINGSPEAK ─── */
-.ts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-.ts-panel {
-  background: var(--panel);
-  border: 1px solid var(--rim);
-  border-radius: var(--r2);
-  overflow: hidden;
-}
-.ts-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--rim);
-}
-.ts-panel-title {
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--text2);
-  text-transform: uppercase;
-}
-.ts-link {
-  font-family: 'DM Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 1px;
-  color: var(--brass2);
-  text-decoration: none;
-  border: 1px solid rgba(200,146,42,0.3);
-  padding: 4px 10px;
-  border-radius: var(--r);
-  transition: all 0.2s;
-}
-.ts-link:hover { background: rgba(200,146,42,0.1); }
-.ts-embed { padding: 0 16px 16px; background: #0f1c38; }
+
 
 /* ─── HISTORY ACCORDION ─── */
 .hist-section { margin-bottom: 8px; }
@@ -985,36 +998,8 @@ footer a:hover { color: var(--brass2); }
   </div>
   <div id="fullHistWrap" style="display:none;margin-bottom:20px"></div>
 
-  <!-- THINGSPEAK LIVE -->
-  <div class="sec-title">
-    <div class="sec-title-text">Live Charts</div>
-    <div class="sec-title-line"></div>
-    <div class="sec-title-tag">ThingSpeak</div>
-  </div>
-  <div class="ts-grid">
-    <div class="ts-panel">
-      <div class="ts-panel-head">
-        <span class="ts-panel-title">Temperature</span>
-        <a class="ts-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
-      </div>
-      <div class="ts-embed">
-        <iframe width="100%" height="260" style="border:none;border-radius:6px;display:block;margin-top:14px"
-          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%230f1c38&color=%23ffb347&dynamic=true&results=30&type=line&update=15&title=Temperature&yaxislabel=Temperature&xaxislabel=Date">
-        </iframe>
-      </div>
-    </div>
-    <div class="ts-panel">
-      <div class="ts-panel-head">
-        <span class="ts-panel-title">Humidity</span>
-        <a class="ts-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
-      </div>
-      <div class="ts-embed">
-        <iframe width="100%" height="260" style="border:none;border-radius:6px;display:block;margin-top:14px"
-          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%230f1c38&color=%237fd4ff&dynamic=true&results=30&type=line&update=15&title=Humidity&yaxislabel=Humidity&xaxislabel=Date">
-        </iframe>
-      </div>
-    </div>
-  </div>
+
+
 
   <!-- TEAM -->
   <div class="sec-title">
@@ -1245,7 +1230,7 @@ function renderTiles(bd, bdAll) {
       (maxTC!==null
         ? '<div class="tile-temp">'+toDisplay(maxTC).toFixed(1)+'°</div>'+
           '<div class="tile-hum">'+maxH+'%</div>'+
-          '<div class="tile-rec">'+(isHB?'~hb':offRec+'/24')+'</div>'
+          '<div class="tile-rec">'+(offRec>0 ? offRec+'/24' : '—')+'</div>'
         : '<div class="tile-empty">'+(isFut?'···':'—')+'</div>');
     wrap.appendChild(tile);
   }
@@ -1269,16 +1254,19 @@ function renderWeekTable(bd, bdAll) {
       any = true;
       const t=dtLive.t, h=dtLive.h;
       const offRec = dt ? dt.t.length : 0;
-      const recLabel = dt ? `${offRec}/24` : `<span style="color:var(--text3)">~hb</span>`;
+      const barW = Math.round(Math.min(40, offRec/24*40));
+      const recLabel = offRec > 0
+        ? `<span class="rec-badge"><span class="rec-bar" style="width:${barW}px"></span>${offRec}/24</span>`
+        : `<span class="rec-badge">—</span>`;
       tr.innerHTML = `
-        <td style="color:${isToday?'var(--brass2)':'var(--text)'};font-weight:500">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
-        <td class="mono c-warm">${toDisplay(avg(t)).toFixed(1)}</td>
-        <td class="mono" style="color:var(--warm)">${toDisplay(Math.max(...t)).toFixed(1)}</td>
-        <td class="mono c-cool">${toDisplay(Math.min(...t)).toFixed(1)}</td>
-        <td class="mono c-cool">${avg(h).toFixed(1)}</td>
-        <td class="mono c-steel">${Math.max(...h).toFixed(1)}</td>
-        <td class="mono c-cool">${Math.min(...h).toFixed(1)}</td>
-        <td class="mono c-muted">${recLabel}</td>`;
+        <td style="color:${isToday?'var(--brass2)':'var(--text)'};font-weight:500">${DAYS_LONG[d-1]}${isToday?'&nbsp;<span style="color:var(--brass);font-size:10px">◀ TODAY</span>':''}</td>
+        <td><span class="stat-pill pill-warm">${toDisplay(avg(t)).toFixed(1)}${unitLabel()}</span></td>
+        <td><span class="stat-pill pill-hot">${toDisplay(Math.max(...t)).toFixed(1)}${unitLabel()}</span></td>
+        <td><span class="stat-pill pill-cool">${toDisplay(Math.min(...t)).toFixed(1)}${unitLabel()}</span></td>
+        <td><span class="stat-pill pill-cool">${avg(h).toFixed(1)}%</span></td>
+        <td><span class="stat-pill pill-steel">${Math.max(...h).toFixed(1)}%</span></td>
+        <td><span class="stat-pill pill-muted">${Math.min(...h).toFixed(1)}%</span></td>
+        <td>${recLabel}</td>`;
     }
     tb.appendChild(tr);
   }
@@ -1335,15 +1323,16 @@ async function fetchPrevWeeks() {
         const dt=bd[d];
         if (!dt||!dt.t.length) { rows+=`<tr><td style="color:var(--text2)">${DAYS_LONG[d-1]}</td><td class="c-muted" colspan="7">—</td></tr>`; continue; }
         const t=dt.t, h=dt.h;
+        const bwp=Math.round(Math.min(40,dt.official/24*40));
         rows+=`<tr>
           <td style="font-weight:500">${DAYS_LONG[d-1]}</td>
-          <td class="mono c-warm">${toDisplay(avg(t)).toFixed(1)}</td>
-          <td class="mono" style="color:var(--warm)">${toDisplay(Math.max(...t)).toFixed(1)}</td>
-          <td class="mono c-cool">${toDisplay(Math.min(...t)).toFixed(1)}</td>
-          <td class="mono c-cool">${avg(h).toFixed(1)}</td>
-          <td class="mono c-steel">${Math.max(...h).toFixed(1)}</td>
-          <td class="mono c-cool">${Math.min(...h).toFixed(1)}</td>
-          <td class="mono c-muted">${dt.official}</td>
+          <td><span class="stat-pill pill-warm">${toDisplay(avg(t)).toFixed(1)}${unitLabel()}</span></td>
+          <td><span class="stat-pill pill-hot">${toDisplay(Math.max(...t)).toFixed(1)}${unitLabel()}</span></td>
+          <td><span class="stat-pill pill-cool">${toDisplay(Math.min(...t)).toFixed(1)}${unitLabel()}</span></td>
+          <td><span class="stat-pill pill-cool">${avg(h).toFixed(1)}%</span></td>
+          <td><span class="stat-pill pill-steel">${Math.max(...h).toFixed(1)}%</span></td>
+          <td><span class="stat-pill pill-muted">${Math.min(...h).toFixed(1)}%</span></td>
+          <td><span class="rec-badge"><span class="rec-bar" style="width:${bwp}px"></span>${dt.official}/24</span></td>
         </tr>`;
       }
       const card = document.createElement('div');
@@ -1442,15 +1431,16 @@ async function fetchFullHistory() {
         const dt=bd[d];
         if (!dt||!dt.t.length) { rows+=`<tr><td style="color:var(--text2)">${DAYS_LONG[d-1]}</td><td class="c-muted" colspan="7">—</td></tr>`; continue; }
         const t=dt.t, h=dt.h;
+        const bw=Math.round(Math.min(40,dt.official/24*40));
         rows+=`<tr>
           <td style="font-weight:500">${DAYS_LONG[d-1]}</td>
-          <td class="mono c-warm">${toDisplay(avg(t)).toFixed(1)}</td>
-          <td class="mono" style="color:var(--warm)">${toDisplay(Math.max(...t)).toFixed(1)}</td>
-          <td class="mono c-cool">${toDisplay(Math.min(...t)).toFixed(1)}</td>
-          <td class="mono c-cool">${avg(h).toFixed(1)}</td>
-          <td class="mono c-steel">${Math.max(...h).toFixed(1)}</td>
-          <td class="mono c-cool">${Math.min(...h).toFixed(1)}</td>
-          <td class="mono c-muted">${dt.official}</td>
+          <td><span class="stat-pill pill-warm">${toDisplay(avg(t)).toFixed(1)}${unitLabel()}</span></td>
+          <td><span class="stat-pill pill-hot">${toDisplay(Math.max(...t)).toFixed(1)}${unitLabel()}</span></td>
+          <td><span class="stat-pill pill-cool">${toDisplay(Math.min(...t)).toFixed(1)}${unitLabel()}</span></td>
+          <td><span class="stat-pill pill-cool">${avg(h).toFixed(1)}%</span></td>
+          <td><span class="stat-pill pill-steel">${Math.max(...h).toFixed(1)}%</span></td>
+          <td><span class="stat-pill pill-muted">${Math.min(...h).toFixed(1)}%</span></td>
+          <td><span class="rec-badge"><span class="rec-bar" style="width:${bw}px"></span>${dt.official}/24</span></td>
         </tr>`;
       }
 
