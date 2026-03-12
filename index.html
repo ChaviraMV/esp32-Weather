@@ -3,741 +3,948 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CLIMALOG · ESP32 DHT Monitor</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Teko:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+<title>CLIMALOG · Weather Station</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-/* =====================================================
-   CLIMALOG  —  Industrial Neon Terminal
-   ===================================================== */
 :root {
-  --bg:        #04080f;
-  --bg2:       #060c18;
-  --surface:   #080e1c;
-  --surface2:  #0b1220;
-  --border:    #0f2040;
-  --border2:   #1a3560;
-  --neon:      #00ffe5;
-  --neon2:     #00ccb8;
-  --neon-dim:  rgba(0,255,229,.07);
-  --neon-glow: 0 0 20px rgba(0,255,229,.4), 0 0 60px rgba(0,255,229,.1);
-  --amber:     #ffb800;
-  --amber2:    #ff8c00;
-  --amber-glow:0 0 20px rgba(255,184,0,.35);
-  --red:       #ff3355;
-  --red2:      #ff6680;
-  --red-glow:  0 0 20px rgba(255,51,85,.35);
-  --blue:      #2060ff;
-  --text:      #b0cce0;
-  --text2:     #5a7898;
-  --muted:     #2a4060;
-  --r:         4px;
-  --r-sm:      2px;
-  --green:     var(--neon);
-  --green2:    var(--neon2);
-  --green-lt:  var(--neon-dim);
-  --teal:      var(--neon);
-  --teal2:     #60c8e0;
-  --coral:     var(--amber);
-  --coral2:    var(--amber2);
-  --pink:      var(--red);
-  --glow-g:    var(--neon-glow);
-  --glow-t:    var(--neon-glow);
-  --glow-c:    var(--amber-glow);
+  --sky:       #0a1628;
+  --sky2:      #0d1f3c;
+  --sky3:      #102548;
+  --panel:     #0e1c35;
+  --panel2:    #111f38;
+  --rim:       rgba(255,255,255,0.07);
+  --rim2:      rgba(255,255,255,0.13);
+  --brass:     #c8922a;
+  --brass2:    #e0b44a;
+  --brass-lt:  #f5d97a;
+  --steel:     #8ba8c8;
+  --steel2:    #b8cfe8;
+  --ice:       #d4eeff;
+  --warm:      #ff8c42;
+  --warm2:     #ffb347;
+  --cool:      #42b8ff;
+  --cool2:     #7fd4ff;
+  --red-warn:  #ff4444;
+  --green-ok:  #44dd88;
+  --text:      #c8dff5;
+  --text2:     #6a90b8;
+  --text3:     #3a5878;
+  --r:         6px;
+  --r2:        12px;
+  --r3:        20px;
 }
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; }
 
 body {
-  background: var(--bg);
+  background: var(--sky);
   color: var(--text);
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 400;
+  font-family: 'Space Grotesk', sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* Scanlines overlay */
+/* Atmospheric background */
 body::before {
   content:'';
   position:fixed; inset:0; z-index:0; pointer-events:none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,.15) 2px,
-    rgba(0,0,0,.15) 4px
-  );
+  background:
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(30,80,160,0.5) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 30% at 20% 100%, rgba(10,30,80,0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 85% 70%, rgba(20,50,120,0.2) 0%, transparent 60%);
 }
 
-/* Noise + vignette */
+/* Subtle cloud texture */
 body::after {
   content:'';
   position:fixed; inset:0; z-index:0; pointer-events:none;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(0,255,229,.04) 0%, transparent 60%),
-    radial-gradient(ellipse at 100% 100%, rgba(0,100,255,.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,.6) 100%);
-}
-
-/* Animated grid */
-.grid-bg {
-  position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
-}
-.grid-bg::before {
-  content:'';
-  position:absolute; inset:-50%;
   background-image:
-    linear-gradient(rgba(0,255,229,.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,255,229,.025) 1px, transparent 1px);
-  background-size: 60px 60px;
-  animation: grid-drift 30s linear infinite;
-}
-.grid-bg::after {
-  content:'';
-  position:absolute; inset:0;
-  background:
-    radial-gradient(1.5px 1.5px at 12% 8%,  rgba(0,255,229,.6) 0%, transparent 100%),
-    radial-gradient(1px   1px   at 28% 22%, rgba(255,184,0,.4)  0%, transparent 100%),
-    radial-gradient(2px   2px   at 55% 5%,  rgba(0,255,229,.5)  0%, transparent 100%),
-    radial-gradient(1px   1px   at 72% 18%, rgba(255,255,255,.3) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 88% 40%, rgba(0,255,229,.4)  0%, transparent 100%),
-    radial-gradient(1px   1px   at 18% 60%, rgba(255,255,255,.2) 0%, transparent 100%),
-    radial-gradient(1px   1px   at 42% 75%, rgba(0,255,229,.3)  0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 65% 85%, rgba(255,184,0,.3)  0%, transparent 100%),
-    radial-gradient(1px   1px   at 90% 72%, rgba(255,255,255,.25) 0%,transparent 100%),
-    radial-gradient(1px   1px   at 5%  90%, rgba(0,255,229,.2)  0%, transparent 100%);
-}
-@keyframes grid-drift { to { transform: translate(60px, 60px); } }
-
-.page { position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:0 24px 100px; }
-
-/* ─── HEADER ─── */
-.site-header {
-  padding: 44px 0 32px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+    radial-gradient(ellipse 200px 60px at 15% 12%, rgba(180,210,255,0.04) 0%, transparent 100%),
+    radial-gradient(ellipse 300px 80px at 70% 8%, rgba(180,210,255,0.03) 0%, transparent 100%),
+    radial-gradient(ellipse 180px 50px at 45% 20%, rgba(180,210,255,0.02) 0%, transparent 100%);
 }
 
-/* Horizontal accent lines */
-.site-header::before {
-  content:'';
-  position:absolute; left:0; right:0; top:50%;
-  height:1px;
-  background: linear-gradient(90deg, transparent, var(--neon2), transparent);
-  opacity:.2;
-}
+.page { position:relative; z-index:1; max-width:1300px; margin:0 auto; padding:0 20px 80px; }
 
-.header-badge {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 5px;
-  color: var(--neon2);
-  background: rgba(0,255,229,.06);
-  border: 1px solid rgba(0,255,229,.2);
-  padding: 5px 18px;
-  border-radius: 2px;
-  margin-bottom: 16px;
-  text-transform: uppercase;
-  animation: fade-in .6s ease both;
-}
-
-.site-title {
-  font-family: 'Teko', sans-serif;
-  font-size: clamp(52px, 9vw, 100px);
-  font-weight: 600;
-  letter-spacing: 8px;
-  color: #fff;
-  line-height: .95;
-  text-transform: uppercase;
-  animation: fade-in .8s ease .1s both;
-  position: relative;
-}
-.site-title .hl {
-  color: var(--neon);
-  text-shadow: var(--neon-glow);
-  position: relative;
-}
-/* Glitch flicker on title */
-.site-title .hl::after {
-  content: attr(data-txt);
-  position:absolute; inset:0;
-  color: var(--amber);
-  text-shadow: none;
-  opacity: 0;
-  animation: glitch 6s ease-in-out infinite;
-}
-@keyframes glitch {
-  0%,94%,100%  { opacity:0; transform:none; }
-  95%          { opacity:.7; transform:translate(-3px,1px) skewX(-5deg); }
-  96%          { opacity:0; }
-  97%          { opacity:.5; transform:translate(2px,-1px); }
-  98%          { opacity:0; }
-}
-
-.site-subtitle {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 5px;
-  color: var(--text2);
-  margin-top: 10px;
-  text-transform: uppercase;
-  animation: fade-in .8s ease .2s both;
-}
-
-/* Corner accents */
-.corner { position:absolute; width:20px; height:20px; }
-.corner-tl { top:20px; left:0;  border-top:2px solid var(--neon); border-left:2px solid var(--neon); }
-.corner-tr { top:20px; right:0; border-top:2px solid var(--neon); border-right:2px solid var(--neon); }
-.corner-bl { bottom:0; left:0;  border-bottom:2px solid var(--neon2); border-left:2px solid var(--neon2); opacity:.4; }
-.corner-br { bottom:0; right:0; border-bottom:2px solid var(--neon2); border-right:2px solid var(--neon2); opacity:.4; }
-
-.moon { display:none; }
-
-@keyframes fade-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
-
-/* ─── STATUS BAR ─── */
-.status-bar {
+/* ─── TOP NAV ─── */
+.topnav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-left: 3px solid var(--neon2);
-  border-radius: var(--r);
-  padding: 10px 20px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 10px;
-  position: relative;
-  overflow: hidden;
-}
-.status-bar::before {
-  content:'';
-  position:absolute; left:0; top:0; bottom:0; width:3px;
-  background: var(--neon);
-  box-shadow: var(--neon-glow);
-}
-.status-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 1px;
-}
-.dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.dot-on   { background:var(--neon);  box-shadow:var(--neon-glow); animation:pulse 2s ease-in-out infinite; }
-.dot-off  { background:var(--red);   box-shadow:var(--red-glow); }
-.dot-wait { background:var(--amber); box-shadow:var(--amber-glow); animation:pulse 1s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
-
-.sbtn {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 2px;
-  padding: 7px 18px;
-  border-radius: var(--r);
-  border: 1px solid var(--neon2);
-  background: rgba(0,255,229,.06);
-  color: var(--neon);
-  cursor: pointer;
-  transition: all .15s;
-  text-transform: uppercase;
-}
-.sbtn:hover {
-  background: rgba(0,255,229,.15);
-  box-shadow: var(--neon-glow);
-}
-
-/* ─── HERO CARDS ─── */
-.hero-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  padding: 16px 0 0;
+  border-bottom: 1px solid var(--rim2);
   margin-bottom: 28px;
 }
-.hero-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 20px 16px 18px;
+.topnav-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* Station emblem */
+.emblem {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--sky3), var(--panel));
+  border: 2px solid var(--brass);
   position: relative;
-  overflow: hidden;
-  transition: border-color .25s, transform .2s;
-  cursor: default;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px rgba(200,146,42,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
 }
-.hero-card::after {
-  content:'';
-  position:absolute; bottom:0; left:0; right:0; height:2px;
-  background: linear-gradient(90deg, transparent, var(--neon2), transparent);
-  opacity:0; transition:opacity .25s;
+.emblem::after {
+  content: '';
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--brass2);
+  position: absolute;
 }
-.hero-card:hover { border-color: var(--border2); transform: translateY(-2px); }
-.hero-card:hover::after { opacity:.6; }
-
-/* Top-right corner bracket on hero card */
-.hero-card::before {
-  content:'';
-  position:absolute; top:8px; right:8px;
-  width:12px; height:12px;
-  border-top:1px solid var(--neon2);
-  border-right:1px solid var(--neon2);
-  opacity:.3;
+.emblem-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--brass-lt);
+  position: absolute;
+  box-shadow: 0 0 6px var(--brass2);
 }
 
-.hero-icon {
-  font-size: 20px;
-  margin-bottom: 12px;
-  display: block;
-  filter: drop-shadow(0 0 6px currentColor);
+.brand-text { line-height: 1; }
+.brand-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 4px;
+  color: var(--ice);
 }
-.hero-label {
-  font-family: 'Share Tech Mono', monospace;
+.brand-sub {
+  font-family: 'DM Mono', monospace;
   font-size: 9px;
   letter-spacing: 3px;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.topnav-center {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text2);
+  text-align: center;
+}
+
+.topnav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Temperature unit toggle */
+.unit-toggle {
+  display: flex;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--rim2);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+}
+.unit-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 5px 14px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  color: var(--text2);
+}
+.unit-btn.active {
+  background: var(--brass);
+  color: #1a0d00;
+  box-shadow: 0 1px 4px rgba(200,146,42,0.4);
+}
+
+.refresh-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--rim2);
+  background: var(--panel);
+  color: var(--steel);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.refresh-btn:hover { border-color: var(--brass); color: var(--brass2); }
+
+/* ─── STATUS STRIP ─── */
+.status-strip {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-left: 3px solid var(--brass);
+  border-radius: var(--r);
+  padding: 10px 18px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.status-ind {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+.ind-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.ind-on    { background: var(--green-ok); box-shadow: 0 0 8px var(--green-ok); animation: blink 2s ease-in-out infinite; }
+.ind-off   { background: var(--red-warn); }
+.ind-wait  { background: var(--warm2); animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.status-divider { width:1px; height:16px; background:var(--rim2); }
+.status-time {
+  margin-left: auto;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--text2); letter-spacing: 1px;
+}
+
+/* ─── INSTRUMENT PANEL — HERO ─── */
+.instrument-panel {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Instrument gauges (left/right columns) */
+.gauge-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.instrument {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  padding: 18px 20px 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.instrument:hover { border-color: var(--rim2); }
+
+/* Brass screw corners */
+.instrument::before,
+.instrument::after {
+  content: '';
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d4a030, #7a5010);
+  border: 1px solid #c48820;
+}
+.instrument::before { top: 8px; left: 8px; }
+.instrument::after  { top: 8px; right: 8px; }
+
+.inst-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.inst-reading {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: 2px;
+}
+.inst-unit {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--text2);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.inst-bar-wrap {
+  margin-top: 12px;
+  height: 3px;
+  background: var(--rim);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.inst-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.inst-minmax {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 1px;
+}
+
+/* ─── CENTER MAIN DISPLAY ─── */
+.main-display {
+  background: linear-gradient(170deg, var(--panel2) 0%, var(--panel) 100%);
+  border: 1px solid var(--rim2);
+  border-radius: var(--r2);
+  padding: 28px 24px 24px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+/* Decorative arc / compass rose background */
+.main-display::before {
+  content: '';
+  position: absolute;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.04);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.main-display::after {
+  content: '';
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.04);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.main-station-id {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--brass);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.main-temp-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 110px;
+  line-height: 0.9;
+  letter-spacing: 4px;
+  position: relative;
+  transition: all 0.4s;
+}
+
+.main-temp-unit {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 40px;
+  color: var(--text2);
+  vertical-align: super;
+  margin-left: 4px;
+}
+
+.main-conditions {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+  position: relative;
+}
+.cond-item {
+  text-align: center;
+}
+.cond-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  line-height: 1;
+}
+.cond-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.cond-sep {
+  width: 1px;
+  background: var(--rim2);
+  align-self: stretch;
+  margin: 4px 0;
+}
+
+.main-datetime {
+  position: relative;
+  margin-top: 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: 2px;
+  text-align: center;
+  line-height: 1.8;
+}
+
+/* Status badge in main panel */
+.live-badge {
+  position: absolute;
+  top: 16px; right: 20px;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--rim2);
+  border-radius: 12px;
+  padding: 5px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--green-ok);
+  text-transform: uppercase;
+}
+
+/* ─── SECTION HEADERS ─── */
+.sec-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 28px 0 14px;
+}
+.sec-title-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: var(--steel2);
+}
+.sec-title-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--rim2), transparent);
+}
+.sec-title-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--brass);
+  border: 1px solid rgba(200,146,42,0.3);
+  padding: 3px 10px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+/* ─── WEEKLY OVERVIEW ─── */
+.week-card {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.week-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--rim);
+  background: rgba(0,0,0,0.2);
+}
+.week-card-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--brass2);
+  text-transform: uppercase;
+}
+.week-card-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text2);
+}
+
+/* Day tiles */
+.day-tiles {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  padding: 16px;
+  gap: 8px;
+}
+.day-tile {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--rim);
+  border-radius: var(--r);
+  padding: 12px 6px 10px;
+  text-align: center;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.day-tile.has-data { border-color: rgba(200,146,42,0.25); }
+.day-tile.is-today {
+  background: rgba(200,146,42,0.08);
+  border-color: var(--brass);
+}
+.day-tile.is-today::before {
+  content: 'TODAY';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  background: var(--brass);
+  color: #1a0800;
+  font-family: 'DM Mono', monospace;
+  font-size: 7px; letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 0 0 4px 4px;
+}
+.day-tile.is-future { opacity: 0.3; }
+
+.tile-day {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 2px;
   color: var(--text2);
   text-transform: uppercase;
   margin-bottom: 8px;
 }
-.hero-val {
-  font-family: 'Teko', sans-serif;
-  font-size: 42px;
-  font-weight: 500;
-  line-height: .9;
-  color: var(--neon);
-  text-shadow: var(--neon-glow);
+.is-today .tile-day { color: var(--brass2); }
+
+.tile-temp {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--warm2);
+  line-height: 1;
 }
-.hero-val.c-coral { color:var(--amber); text-shadow:var(--amber-glow); }
-.hero-val.c-teal  { color:var(--neon);  text-shadow:var(--neon-glow); }
-.hero-val.c-pink  { color:var(--red);   text-shadow:var(--red-glow); }
-.hero-sub {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  color: var(--text2);
-  margin-top: 8px;
-}
-.hero-sub .up   { color:var(--amber); }
-.hero-sub .down { color:var(--neon2); }
-.online-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(0,255,229,.07);
-  border: 1px solid rgba(0,255,229,.2);
-  border-radius: 2px;
-  padding: 3px 10px;
-  font-family: 'Share Tech Mono', monospace;
+.tile-hum {
+  font-family: 'DM Mono', monospace;
   font-size: 9px;
-  color: var(--neon);
+  color: var(--cool2);
+  margin-top: 4px;
+}
+.tile-rec {
+  font-family: 'DM Mono', monospace;
+  font-size: 7px;
+  color: var(--text3);
+  margin-top: 4px;
+}
+.tile-empty {
+  font-size: 18px;
+  color: var(--rim2);
   margin-top: 8px;
-  letter-spacing: 1px;
 }
 
-/* ─── SECTION HEADERS ─── */
-.sec-hdr {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  margin-top: 12px;
-}
-.sec-hdr-icon {
-  width: 14px; height: 14px;
-  border: 2px solid var(--neon);
-  background: rgba(0,255,229,.15);
-  border-radius: 2px;
-  flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(0,255,229,.3);
-}
-.sec-hdr-title {
-  font-family: 'Teko', sans-serif;
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: 5px;
-  color: var(--neon);
+/* ─── DATA TABLE ─── */
+.data-table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 3px;
   text-transform: uppercase;
-  text-shadow: 0 0 20px rgba(0,255,229,.3);
+  color: var(--brass);
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(200,146,42,0.2);
+  background: rgba(0,0,0,0.2);
+  text-align: left;
 }
-.sec-hdr-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--neon2), transparent);
-  opacity:.3;
+tbody td {
+  font-size: 14px;
+  font-weight: 400;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--rim);
+  color: var(--text);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: rgba(255,255,255,0.02); }
+.mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+.c-warm  { color: var(--warm2); }
+.c-cool  { color: var(--cool2); }
+.c-steel { color: var(--steel2); }
+.c-muted { color: var(--text2); }
+.c-red   { color: var(--red-warn); }
+.c-brass { color: var(--brass2); }
+.empty-td {
+  text-align: center;
+  padding: 32px !important;
+  color: var(--text3) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 10px !important;
+  letter-spacing: 2px;
 }
 
-/* ─── SPACE CARD ─── */
-.s-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  overflow: hidden;
+/* ─── THINGSPEAK ─── */
+.ts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   margin-bottom: 20px;
-  position: relative;
 }
-/* Left accent bar */
-.s-card::after {
-  content:'';
-  position:absolute; left:0; top:0; bottom:0; width:2px;
-  background: linear-gradient(180deg, var(--neon2), transparent);
-  opacity:.4;
+.ts-panel {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  overflow: hidden;
 }
-.s-card > * { position:relative; z-index:1; }
-.s-card-head {
+.ts-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(0,255,229,.02);
-  flex-wrap: wrap;
-  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--rim);
 }
-.s-card-title {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
+.ts-panel-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
   letter-spacing: 2px;
-  color: var(--neon2);
+  color: var(--text2);
   text-transform: uppercase;
+}
+.ts-link {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--brass2);
+  text-decoration: none;
+  border: 1px solid rgba(200,146,42,0.3);
+  padding: 4px 10px;
+  border-radius: var(--r);
+  transition: all 0.2s;
+}
+.ts-link:hover { background: rgba(200,146,42,0.1); }
+.ts-embed { padding: 0 16px 16px; background: #0f1c38; }
+
+/* ─── HISTORY ACCORDION ─── */
+.hist-section { margin-bottom: 8px; }
+.hist-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: background 0.2s;
+  user-select: none;
 }
-.s-card-meta {
-  font-family: 'Share Tech Mono', monospace;
+.hist-toggle:hover { background: var(--panel2); }
+.hist-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hist-toggle-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--brass2);
+  text-transform: uppercase;
+}
+.hist-toggle-meta {
+  font-family: 'DM Mono', monospace;
   font-size: 10px;
   color: var(--text2);
-  background: rgba(255,255,255,.03);
-  border: 1px solid var(--border2);
-  padding: 3px 10px;
-  border-radius: 2px;
 }
-
-/* ─── TABLES ─── */
-.tbl-wrap { overflow-x: auto; }
-table { width:100%; border-collapse:collapse; }
-th {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--neon2);
-  text-align: left;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border2);
-  background: rgba(0,255,229,.03);
+.hist-toggle-stats {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--warm2);
+  letter-spacing: 1px;
 }
-td {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  padding: 11px 20px;
-  border-bottom: 1px solid rgba(15,32,64,.8);
-  color: var(--text);
+.hist-arrow {
+  font-size: 12px;
+  color: var(--text2);
+  transition: transform 0.25s;
 }
-tr:last-child td { border-bottom: none; }
-tbody tr:hover td { background: rgba(0,255,229,.03); }
-.mono { font-family: 'Share Tech Mono', monospace; font-size: 12px; }
-.c-green  { color: var(--neon); }
-.c-teal   { color: var(--neon2); }
-.c-coral  { color: var(--amber); }
-.c-muted  { color: var(--text2); }
-.c-pink   { color: var(--red); }
-.empty-row {
-  text-align:center; padding:36px 20px !important;
-  color:var(--muted) !important;
-  font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:2px;
-}
-
-/* ─── WEEK TILES ─── */
-.tiles-grid {
-  display: grid;
-  grid-template-columns: repeat(7,1fr);
-  gap: 6px;
-  padding: 14px;
-}
-.w-tile {
-  background: rgba(0,0,0,.3);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 14px 6px 12px;
-  text-align: center;
-  position: relative;
-  transition: border-color .2s, background .2s;
+.hist-body {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-top: none;
+  border-radius: 0 0 var(--r) var(--r);
   overflow: hidden;
 }
-.w-tile::before {
-  content:'';
-  position:absolute; top:0; left:0; right:0; height:1px;
-  background: transparent;
-  transition: background .2s;
+
+/* Full history container */
+.full-hist-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: background 0.2s;
+  user-select: none;
 }
-.w-tile.has-data::before  { background: var(--neon2); box-shadow:0 0 8px var(--neon2); }
-.w-tile.has-data  { border-color: var(--border2); }
-.w-tile.is-today  { background: rgba(0,255,229,.06); border-color: var(--neon2); }
-.w-tile.is-today::before { background:var(--neon); box-shadow: 0 0 12px var(--neon); }
-.w-tile.is-future { opacity: .25; }
-.w-tile-badge {
-  position: absolute; top:0; left:50%; transform:translateX(-50%);
-  background: var(--neon);
-  color: #000;
-  font-family: 'Share Tech Mono', monospace; font-size:7px; letter-spacing:1px;
-  padding: 2px 8px; white-space:nowrap;
-  border-radius: 0 0 3px 3px;
+.full-hist-bar:hover { background: var(--panel2); }
+.full-hist-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--steel2);
+  text-transform: uppercase;
 }
-.w-tile-day {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; letter-spacing: 2px;
-  color: var(--text2); text-transform:uppercase; margin-bottom:10px;
-}
-.w-tile.is-today .w-tile-day { color: var(--neon); }
-.w-tile-temp {
-  font-family: 'Teko', sans-serif;
-  font-size: 26px; font-weight:500;
-  color: var(--amber); line-height:1;
-  text-shadow: var(--amber-glow);
-}
-.w-tile-hum  { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--neon2); margin-top:4px; }
-.w-tile-cnt  { font-family:'Share Tech Mono',monospace; font-size:8px; color:var(--muted); margin-top:5px; }
-.w-tile-dash { font-size:18px; color:var(--border); margin-top:8px; }
 
 /* ─── TEAM ─── */
-.team-grid { display:grid; grid-template-columns:repeat(3,1fr); }
-.team-card {
-  display:flex; align-items:center; gap:16px; padding:20px 24px;
-  border-right:1px solid var(--border); transition:background .15s;
-}
-.team-card:last-child { border-right:none; }
-.team-card:hover { background:rgba(0,255,229,.03); }
-.team-av {
-  width:44px; height:44px; border-radius:var(--r); flex-shrink:0;
-  background: rgba(0,0,0,.4);
-  border:1px solid var(--neon2);
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Teko',sans-serif; font-size:18px; font-weight:600; color:var(--neon);
-  text-shadow: var(--neon-glow);
-  box-shadow: inset 0 0 12px rgba(0,255,229,.1);
-}
-.team-nm { font-weight:600; font-size:16px; color:var(--text); letter-spacing:.5px; }
-.team-rl { font-size:12px; color:var(--text2); margin-top:2px; font-family:'Share Tech Mono',monospace; letter-spacing:1px; }
-
-/* ─── DOWNLOAD BTN ─── */
-.dl-btn {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; letter-spacing:3px; text-transform:uppercase;
-  padding: 10px 24px; border-radius:var(--r); cursor:pointer;
-  border: 1px solid var(--neon2);
-  background: rgba(0,255,229,.05); color: var(--neon);
-  transition:all .2s; display:inline-flex; align-items:center; gap:8px;
-  margin:16px 20px;
-  position: relative; overflow:hidden;
-}
-.dl-btn::before {
-  content:'';
-  position:absolute; top:0; left:-100%; width:100%; height:100%;
-  background: linear-gradient(90deg, transparent, rgba(0,255,229,.1), transparent);
-  transition: left .4s ease;
-}
-.dl-btn:hover { border-color:var(--neon); box-shadow:var(--neon-glow); }
-.dl-btn:hover::before { left:100%; }
-
-/* ─── FULL HISTORY ─── */
-.fh-bar {
-  display:flex; align-items:center;
-  padding:18px 24px; cursor:pointer;
-  transition: background .15s;
-  user-select:none;
-}
-.fh-bar:hover { background: rgba(0,255,229,.04); }
-.fh-week-card { border-top: 1px solid var(--border); }
-.fh-week-hdr {
-  display:flex; align-items:center; justify-content:space-between;
-  padding: 12px 20px 8px; cursor: pointer;
-}
-.fh-week-hdr:hover { background: rgba(0,255,229,.02); }
-.fh-week-title {
-  font-family:'Share Tech Mono',monospace; font-size:11px;
-  letter-spacing:2px; color:var(--neon2); text-transform:uppercase;
-}
-.fh-week-meta { font-size:11px; color:var(--text2); font-family:'Share Tech Mono',monospace; }
-.fh-week-body { padding: 0 16px 12px; }
-.fh-toggle { font-size:12px; color:var(--muted); margin-left:12px; transition:transform .25s; }
-
-/* ─── THINGSPEAK CARDS ─── */
-.ts-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
+.team-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
   overflow: hidden;
-  position: relative;
 }
-.ts-card::after {
-  content:'';
-  position:absolute; top:0; left:0; right:0; height:1px;
-  background: linear-gradient(90deg, transparent, var(--neon2), transparent);
-  opacity:.4;
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+  border-right: 1px solid var(--rim);
+  transition: background 0.2s;
 }
-.ts-head {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:12px 20px; border-bottom:1px solid var(--border);
+.team-member:last-child { border-right: none; }
+.team-member:hover { background: rgba(255,255,255,0.02); }
+.team-avatar {
+  width: 44px; height: 44px;
+  border-radius: var(--r);
+  background: var(--sky3);
+  border: 1px solid rgba(200,146,42,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  color: var(--brass2);
+  flex-shrink: 0;
 }
-.ts-title { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--text2); text-transform:uppercase; }
-.ts-link {
-  font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px;
-  color:var(--neon2); text-decoration:none;
-  border:1px solid var(--border2); padding:4px 12px; border-radius:var(--r);
-  transition:all .15s; text-transform:uppercase;
+.team-name {
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--ice);
 }
-.ts-link:hover { background:rgba(0,255,229,.08); border-color:var(--neon2); }
-
-/* ─── SPIN ─── */
-.spin {
-  display:inline-block; width:11px; height:11px;
-  border:1.5px solid var(--border2); border-top-color:var(--neon);
-  border-radius:50%; animation:rot .7s linear infinite;
-  vertical-align:middle; margin-right:6px;
+.team-role {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text2);
+  letter-spacing: 1px;
+  margin-top: 3px;
 }
-@keyframes rot { to{transform:rotate(360deg)} }
 
 /* ─── FOOTER ─── */
 footer {
-  border-top:1px solid var(--border); padding-top:24px; margin-top:24px;
-  font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted);
-  text-align:center; letter-spacing:3px;
+  border-top: 1px solid var(--rim);
+  padding: 20px 0;
+  margin-top: 20px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--text3);
+  text-transform: uppercase;
 }
-footer a { color:var(--neon2); text-decoration:none; }
-footer a:hover { color:var(--neon); }
+footer a { color: var(--brass); text-decoration: none; }
+footer a:hover { color: var(--brass2); }
+
+/* ─── SPINNER ─── */
+.spin {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border: 1.5px solid var(--rim2);
+  border-top-color: var(--brass);
+  border-radius: 50%;
+  animation: rot 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes rot { to { transform: rotate(360deg); } }
 
 /* ─── RESPONSIVE ─── */
-.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.mb-4 { margin-bottom:16px; }
-.mb-5 { margin-bottom:20px; }
-
-/* ─── ENTRADA ANIMADA ─── */
-.page > * {
-  animation: slide-up .5s ease both;
+@media(max-width: 900px) {
+  .instrument-panel { grid-template-columns: 1fr 1fr; }
+  .gauge-col { flex-direction: row; flex-wrap: wrap; }
+  .instrument { flex: 1; min-width: 120px; }
+  .main-display { grid-column: 1 / -1; order: -1; }
+  .ts-grid { grid-template-columns: 1fr; }
+  .team-row { grid-template-columns: 1fr; }
+  .team-member { border-right: none; border-bottom: 1px solid var(--rim); }
 }
-.page > *:nth-child(1) { animation-delay:.05s }
-.page > *:nth-child(2) { animation-delay:.1s }
-.page > *:nth-child(3) { animation-delay:.15s }
-.page > *:nth-child(4) { animation-delay:.2s }
-@keyframes slide-up {
-  from { opacity:0; transform:translateY(16px); }
-  to   { opacity:1; transform:none; }
+@media(max-width: 600px) {
+  .instrument-panel { grid-template-columns: 1fr; }
+  .day-tiles { grid-template-columns: repeat(4,1fr); }
+  .main-temp-big { font-size: 80px; }
 }
 
-/* Progress (legacy) */
-.prog-wrap { padding: 14px 20px; border-bottom: 1px solid var(--border); }
-.prog-lbl  { display:flex; justify-content:space-between; font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text2); margin-bottom:8px; }
-.prog-lbl span:last-child { color:var(--neon); }
-.prog-track { height:4px; background:rgba(255,255,255,.05); border-radius:2px; overflow:hidden; }
-.prog-fill  { height:4px; background:linear-gradient(90deg,var(--neon2),var(--neon)); border-radius:2px; transition:width 1.2s ease; }
-.prog-ticks { display:flex; justify-content:space-between; font-family:'Share Tech Mono',monospace; font-size:8px; color:var(--muted); margin-top:4px; }
-
-/* chart-pair kept for compatibility */
-.chart-pair { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px; }
-.chart-box  { background:rgba(0,0,0,.2); border:1px solid var(--border); border-radius:var(--r); padding:16px; }
-.chart-box-title { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--text2); text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
-.hour-table-wrap { padding: 0 20px 20px; }
-.hour-section-lbl { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); padding:12px 0 6px; border-bottom:1px solid var(--border); margin-bottom:4px; }
-
-@media(max-width:768px){
-  .hero-grid { grid-template-columns:repeat(2,1fr); }
-  .grid-2    { grid-template-columns:1fr; }
-  .chart-pair{ grid-template-columns:1fr; }
-  .tiles-grid{ grid-template-columns:repeat(4,1fr); }
-  .team-grid { grid-template-columns:1fr; }
-  .team-card { border-right:none; border-bottom:1px solid var(--border); }
-  .site-title { font-size: 52px; letter-spacing:4px; }
-}
+/* ─── ANIMATIONS ─── */
+.page > * { animation: fadein 0.5s ease both; }
+.page > *:nth-child(1) { animation-delay: 0.05s; }
+.page > *:nth-child(2) { animation-delay: 0.1s; }
+.page > *:nth-child(3) { animation-delay: 0.15s; }
+.page > *:nth-child(4) { animation-delay: 0.2s; }
+.page > *:nth-child(5) { animation-delay: 0.25s; }
+@keyframes fadein { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 </style>
 </head>
 <body>
-<div class="grid-bg"></div>
 <div class="page">
 
-  <!-- HEADER -->
-  <header class="site-header">
-    <div class="corner corner-tl"></div>
-    <div class="corner corner-tr"></div>
-    <div class="corner corner-bl"></div>
-    <div class="corner corner-br"></div>
-    <div class="header-badge">&#9642; ESP32 · DHT11 · Tijuana BC · Real-Time &#9642;</div>
-    <div class="site-title">CLIMA<span class="hl" data-txt="LOG">LOG</span></div>
-    <div class="site-subtitle">Environmental Monitoring System · ThingSpeak</div>
-  </header>
-
-  <!-- STATUS BAR -->
-  <div class="status-bar">
-    <div class="status-pill">
-      <span class="dot dot-wait" id="sDot"></span>
-      <span id="sLabel" style="color:var(--text2)">CONNECTING...</span>
-    </div>
-    <div class="status-pill" style="color:var(--muted)">
-      Last update: <span id="lastUpd" style="color:var(--text)">—</span>
-      &nbsp;·&nbsp; <span id="feedAge">—</span>
-    </div>
-    <button class="sbtn" onclick="fetchData()">&#8635; REFRESH</button>
-  </div>
-
-  <!-- HERO CARDS -->
-  <div class="hero-grid mb-5">
-    <!-- Date & Time -->
-    <div class="hero-card">
-      <span class="hero-icon">&#128336;</span>
-      <div class="hero-label">Date &amp; Time</div>
-      <div id="heroDate" style="font-family:'Space Mono',monospace;font-size:13px;color:var(--text);line-height:1.7">
-        —<br>—<br>—
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="topnav-brand">
+      <div class="emblem">
+        <div class="emblem-dot"></div>
+      </div>
+      <div class="brand-text">
+        <div class="brand-name">CLIMALOG</div>
+        <div class="brand-sub">ESP32 · DHT11 · Tijuana B.C.</div>
       </div>
     </div>
-    <!-- Temperature -->
-    <div class="hero-card">
-      <span class="hero-icon">&#127777;</span>
-      <div class="hero-label">Temperature</div>
-      <div class="hero-val c-coral" id="hTemp">--.-<span style="font-size:16px">°C</span></div>
-      <div id="hTempStatus"></div>
+
+    <div class="topnav-center" id="navClock">—</div>
+
+    <div class="topnav-right">
+      <div class="unit-toggle">
+        <button class="unit-btn active" id="btnC" onclick="setUnit('C')">°C</button>
+        <button class="unit-btn" id="btnF" onclick="setUnit('F')">°F</button>
+      </div>
+      <button class="refresh-btn" onclick="fetchData()">↻ Refresh</button>
     </div>
-    <!-- Humidity -->
-    <div class="hero-card">
-      <span class="hero-icon">&#128167;</span>
-      <div class="hero-label">Humidity</div>
-      <div class="hero-val c-teal" id="hHum">--.-<span style="font-size:16px">%</span></div>
-      <div id="hHumStatus"></div>
+  </nav>
+
+  <!-- STATUS STRIP -->
+  <div class="status-strip">
+    <div class="status-ind">
+      <div class="ind-dot ind-wait" id="sDot"></div>
+      <span id="sLabel" style="color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px">CONNECTING</span>
     </div>
-    <!-- Today Max -->
-    <div class="hero-card">
-      <span class="hero-icon" style="color:var(--coral)">&#9650;</span>
-      <div class="hero-label">Today Max</div>
-      <div class="hero-val c-coral" id="hTmax">--<span style="font-size:14px">°C</span></div>
-      <div class="hero-sub"><span class="up" id="hHmax">-- %</span></div>
+    <div class="status-divider"></div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:1px">
+      Last update: <span id="lastUpd" style="color:var(--text)">—</span>
     </div>
-    <!-- Today Min -->
-    <div class="hero-card">
-      <span class="hero-icon" style="color:var(--teal2)">&#9660;</span>
-      <div class="hero-label">Today Min</div>
-      <div class="hero-val c-teal" id="hTmin">--<span style="font-size:14px">°C</span></div>
-      <div class="hero-sub"><span class="down" id="hHmin">-- %</span></div>
+    <span id="feedAge" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">—</span>
+    <div class="status-divider"></div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:1px">
+      Station: <span style="color:var(--brass2)">TJX · 32.5°N 117.0°W · 20m ASL</span>
     </div>
   </div>
 
-  <!-- CURRENT WEEK TABLE -->
-  <div class="sec-hdr">
-    <div class="sec-hdr-icon"></div>
-    <div class="sec-hdr-title">Current Week</div>
-    <div class="sec-hdr-line"></div>
-  </div>
-  <div class="s-card mb-5">
-    <div class="s-card-head">
-      <div class="s-card-title">&#9679; Week of <span id="weekOf">—</span></div>
-      <span class="s-card-meta" id="weekMeta">—</span>
+  <!-- INSTRUMENT PANEL -->
+  <div class="instrument-panel">
+
+    <!-- LEFT GAUGES -->
+    <div class="gauge-col">
+      <!-- Today Max Temp -->
+      <div class="instrument">
+        <div class="inst-label">Max Temp · Today</div>
+        <div style="display:flex;align-items:baseline">
+          <div class="inst-reading c-warm" id="gMaxT">--</div>
+          <span class="inst-unit" id="gMaxTunit">°C</span>
+        </div>
+        <div class="inst-bar-wrap">
+          <div class="inst-bar-fill" id="bMaxT" style="width:0%;background:linear-gradient(90deg,var(--warm),var(--warm2))"></div>
+        </div>
+        <div class="inst-minmax"><span>0°</span><span>50°</span></div>
+      </div>
+
+      <!-- Today Min Temp -->
+      <div class="instrument">
+        <div class="inst-label">Min Temp · Today</div>
+        <div style="display:flex;align-items:baseline">
+          <div class="inst-reading c-cool" id="gMinT">--</div>
+          <span class="inst-unit" id="gMinTunit">°C</span>
+        </div>
+        <div class="inst-bar-wrap">
+          <div class="inst-bar-fill" id="bMinT" style="width:0%;background:linear-gradient(90deg,var(--cool),var(--cool2))"></div>
+        </div>
+        <div class="inst-minmax"><span>0°</span><span>50°</span></div>
+      </div>
     </div>
-    <!-- 7-day tile summary -->
-    <div class="tiles-grid" id="tiles"></div>
-    <!-- Daily averages table -->
-    <div class="tbl-wrap" style="padding:0 16px 0">
+
+    <!-- CENTER MAIN DISPLAY -->
+    <div class="main-display">
+      <div class="live-badge" id="liveBadge" style="display:none">
+        <div class="ind-dot ind-on" style="width:6px;height:6px"></div>
+        LIVE
+      </div>
+      <div class="main-station-id">STATION TJX · SENSOR ONLINE</div>
+      <div style="display:flex;align-items:flex-start;position:relative">
+        <div class="main-temp-big" id="mainTemp" style="color:var(--warm2)">
+          --<span class="main-temp-unit" id="mainTempUnit">°C</span>
+        </div>
+      </div>
+      <div class="main-conditions">
+        <div class="cond-item">
+          <div class="cond-val c-cool" id="mainHum">--%</div>
+          <div class="cond-lbl">Humidity</div>
+        </div>
+        <div class="cond-sep"></div>
+        <div class="cond-item">
+          <div class="cond-val" id="mainMaxH" style="color:var(--steel2)">--%</div>
+          <div class="cond-lbl">Max Hum</div>
+        </div>
+        <div class="cond-sep"></div>
+        <div class="cond-item">
+          <div class="cond-val" id="mainMinH" style="color:var(--steel)">--%</div>
+          <div class="cond-lbl">Min Hum</div>
+        </div>
+      </div>
+      <div class="main-datetime" id="mainClock">—</div>
+    </div>
+
+    <!-- RIGHT GAUGES -->
+    <div class="gauge-col">
+      <!-- Max Humidity -->
+      <div class="instrument">
+        <div class="inst-label">Max Hum · Today</div>
+        <div style="display:flex;align-items:baseline">
+          <div class="inst-reading" id="gMaxH" style="color:var(--steel2)">--</div>
+          <span class="inst-unit">%</span>
+        </div>
+        <div class="inst-bar-wrap">
+          <div class="inst-bar-fill" id="bMaxH" style="width:0%;background:linear-gradient(90deg,var(--steel),var(--steel2))"></div>
+        </div>
+        <div class="inst-minmax"><span>0%</span><span>100%</span></div>
+      </div>
+
+      <!-- Min Humidity -->
+      <div class="instrument">
+        <div class="inst-label">Min Hum · Today</div>
+        <div style="display:flex;align-items:baseline">
+          <div class="inst-reading" id="gMinH" style="color:var(--steel)">--</div>
+          <span class="inst-unit">%</span>
+        </div>
+        <div class="inst-bar-wrap">
+          <div class="inst-bar-fill" id="bMinH" style="width:0%;background:linear-gradient(90deg,#4a88b8,var(--steel))"></div>
+        </div>
+        <div class="inst-minmax"><span>0%</span><span>100%</span></div>
+      </div>
+    </div>
+
+  </div><!-- /instrument-panel -->
+
+  <!-- CURRENT WEEK -->
+  <div class="sec-title">
+    <div class="sec-title-text">Current Week</div>
+    <div class="sec-title-line"></div>
+    <div class="sec-title-tag" id="weekRangeTag">—</div>
+  </div>
+
+  <div class="week-card">
+    <div class="week-card-head">
+      <div class="week-card-title">&#9679; Weekly Overview — <span id="weekOf">—</span></div>
+      <div class="week-card-meta" id="weekMeta">—</div>
+    </div>
+    <div class="day-tiles" id="tiles"></div>
+    <div class="data-table-wrap" style="padding:0 16px 0">
       <table>
         <thead>
           <tr>
@@ -748,124 +955,156 @@ footer a:hover { color:var(--neon); }
           </tr>
         </thead>
         <tbody id="weekTb">
-          <tr><td colspan="8" class="empty-row"><span class="spin"></span>Loading...</td></tr>
+          <tr><td colspan="8" class="empty-td"><span class="spin"></span>Loading...</td></tr>
         </tbody>
       </table>
     </div>
-    <button class="dl-btn" onclick="downloadCSV()">&#8595; DOWNLOAD CSV</button>
+    <div style="height:16px"></div>
   </div>
 
   <!-- PREVIOUS WEEKS -->
-  <div class="sec-hdr">
-    <div class="sec-hdr-icon"></div>
-    <div class="sec-hdr-title">Previous Weeks</div>
-    <div class="sec-hdr-line"></div>
+  <div class="sec-title">
+    <div class="sec-title-text">Previous Weeks</div>
+    <div class="sec-title-line"></div>
   </div>
-  <div id="prevWeeksWrap" class="mb-5">
-    <div class="s-card" style="text-align:center;padding:24px">
-      <span class="spin"></span> Loading previous weeks...
+  <div id="prevWeeksWrap">
+    <div style="text-align:center;padding:24px;color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px">
+      <span class="spin"></span>Loading previous weeks...
     </div>
   </div>
 
   <!-- FULL HISTORY -->
-  <div class="sec-hdr">
-    <div class="sec-hdr-icon"></div>
-    <div class="sec-hdr-title">Full History</div>
-    <div class="sec-hdr-line"></div>
+  <div class="sec-title">
+    <div class="sec-title-text">Full History</div>
+    <div class="sec-title-line"></div>
   </div>
-  <div class="s-card mb-5" style="padding:0">
-    <div class="fh-bar" onclick="toggleFullHistory()">
-      <span id="fhIcon" style="font-size:18px;margin-right:10px;transition:transform .3s">▶</span>
-      <span style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:2px;color:var(--green)">LOAD ALL RECORDED DATA</span>
-      <span id="fhMeta" style="margin-left:auto;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace"></span>
-    </div>
-    <div id="fullHistWrap" style="display:none;padding:0 0 8px"></div>
+  <div class="full-hist-bar" onclick="toggleFullHistory()" style="margin-bottom:20px">
+    <span id="fhArrow" style="font-size:14px;transition:transform 0.3s;color:var(--brass)">▶</span>
+    <span class="full-hist-label">Load all recorded data</span>
+    <span id="fhMeta" style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)"></span>
   </div>
+  <div id="fullHistWrap" style="display:none;margin-bottom:20px"></div>
 
-  <!-- THINGSPEAK LIVE CHARTS -->
-  <div class="sec-hdr">
-    <div class="sec-hdr-icon"></div>
-    <div class="sec-hdr-title">ThingSpeak Live</div>
-    <div class="sec-hdr-line"></div>
+  <!-- THINGSPEAK LIVE -->
+  <div class="sec-title">
+    <div class="sec-title-text">Live Charts</div>
+    <div class="sec-title-line"></div>
+    <div class="sec-title-tag">ThingSpeak</div>
   </div>
-  <div class="grid-2 mb-5">
-    <div class="ts-card">
-      <div class="ts-head">
-        <span class="ts-title">&#127777; Temperature</span>
-        <a class="ts-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open &#8599;</a>
+  <div class="ts-grid">
+    <div class="ts-panel">
+      <div class="ts-panel-head">
+        <span class="ts-panel-title">Temperature</span>
+        <a class="ts-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
       </div>
-      <div style="background:#1a2744;padding:0 16px 16px">
-        <iframe width="100%" height="260" style="border:none;border-radius:8px;display:block;margin-top:16px"
-          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%231a2744&color=%23dc5050&dynamic=true&results=30&type=line&update=15&title=Measure+Weather&yaxislabel=Temperature&xaxislabel=Date">
+      <div class="ts-embed">
+        <iframe width="100%" height="260" style="border:none;border-radius:6px;display:block;margin-top:14px"
+          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%230f1c38&color=%23ffb347&dynamic=true&results=30&type=line&update=15&title=Temperature&yaxislabel=Temperature&xaxislabel=Date">
         </iframe>
       </div>
     </div>
-    <div class="ts-card">
-      <div class="ts-head">
-        <span class="ts-title">&#128167; Humidity</span>
-        <a class="ts-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open &#8599;</a>
+    <div class="ts-panel">
+      <div class="ts-panel-head">
+        <span class="ts-panel-title">Humidity</span>
+        <a class="ts-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
       </div>
-      <div style="background:#1a2744;padding:0 16px 16px">
-        <iframe width="100%" height="260" style="border:none;border-radius:8px;display:block;margin-top:16px"
-          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%231a2744&color=%235bb8d4&dynamic=true&results=30&type=line&update=15&title=Measure+Weather&yaxislabel=Humidity&xaxislabel=Date">
+      <div class="ts-embed">
+        <iframe width="100%" height="260" style="border:none;border-radius:6px;display:block;margin-top:14px"
+          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%230f1c38&color=%237fd4ff&dynamic=true&results=30&type=line&update=15&title=Humidity&yaxislabel=Humidity&xaxislabel=Date">
         </iframe>
       </div>
     </div>
   </div>
 
   <!-- TEAM -->
-  <div class="sec-hdr">
-    <div class="sec-hdr-icon"></div>
-    <div class="sec-hdr-title">Project Team</div>
-    <div class="sec-hdr-line"></div>
+  <div class="sec-title">
+    <div class="sec-title-text">Project Team</div>
+    <div class="sec-title-line"></div>
   </div>
-  <div class="s-card mb-5">
-    <div class="team-grid">
-      <div class="team-card">
-        <div class="team-av">MV</div>
-        <div><div class="team-nm">Mauricio Vela</div><div class="team-rl">Lead Developer</div></div>
+  <div class="team-row" style="margin-bottom:24px">
+    <div class="team-member">
+      <div class="team-avatar">MV</div>
+      <div>
+        <div class="team-name">Mauricio Vela</div>
+        <div class="team-role">Collaborator</div>
       </div>
-      <div class="team-card">
-        <div class="team-av">CC</div>
-        <div><div class="team-nm">Carlos Cayetano</div><div class="team-rl">Collaborator</div></div>
+    </div>
+    <div class="team-member">
+      <div class="team-avatar">CC</div>
+      <div>
+        <div class="team-name">Carlos Cayetano</div>
+        <div class="team-role">Collaborator</div>
       </div>
-      <div class="team-card">
-        <div class="team-av">DL</div>
-        <div><div class="team-nm">Daniel Lopez</div><div class="team-rl">Collaborator</div></div>
+    </div>
+    <div class="team-member">
+      <div class="team-avatar">DL</div>
+      <div>
+        <div class="team-name">Daniel Lopez</div>
+        <div class="team-role">Collaborator</div>
       </div>
     </div>
   </div>
 
   <footer>
     CLIMALOG &middot; ESP32 + DHT11 &middot;
-    <a href="https://thingspeak.com/channels/3284038" target="_blank">THINGSPEAK</a> &middot;
-    <a href="https://pages.github.com" target="_blank">GITHUB PAGES</a>
+    <a href="https://thingspeak.com/channels/3284038" target="_blank">ThingSpeak</a> &middot;
+    <a href="https://pages.github.com" target="_blank">GitHub Pages</a>
   </footer>
 
 </div><!-- /page -->
 
 <script>
-/* ============================================================
-   CLIMALOG — Dashboard JS  (solo ThingSpeak, limpio)
-   field1 = Temperatura
-   field2 = Humedad
-   field3 = Weekday 1=Lun...7=Dom  (registros oficiales)
-   field4 = Hora 0-23              (registros oficiales)
-   Heartbeats: solo field1+field2, sin field3/field4
-   ============================================================ */
-const CH_ID     = "3284038";
-const RD_KEY    = "IV68XDIEZ0KAVM7N";
-const TZ        = "America/Tijuana";
-const OFFLINE_S = 3600 * 1.5;
-const TICK_MS   = 5 * 60 * 1000;
+const CH_ID    = "3284038";
+const RD_KEY   = "IV68XDIEZ0KAVM7N";
+const TZ       = "America/Tijuana";
+const OFFLINE  = 3600 * 1.5;
+const TICK_MS  = 5 * 60 * 1000;
 
 const DAYS_LONG  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DAYS_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 const MONTHS     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const WJS        = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-let feeds  = [];
-let charts = {};
+let feeds = [];
+let unit  = 'C'; // 'C' or 'F'
+
+/* ── UNIT CONVERSION ── */
+function toDisplay(c) {
+  if (unit === 'F') return (c * 9/5 + 32);
+  return c;
+}
+function fmtTemp(c) {
+  return toDisplay(c).toFixed(1);
+}
+function unitLabel() {
+  return unit === 'F' ? '°F' : '°C';
+}
+
+function setUnit(u) {
+  unit = u;
+  document.getElementById('btnC').classList.toggle('active', u === 'C');
+  document.getElementById('btnF').classList.toggle('active', u === 'F');
+  // Update all displayed temps without re-fetching
+  if (feeds.length) {
+    const last = feeds[feeds.length-1];
+    const tv = parseFloat(last.field1), hv = parseFloat(last.field2);
+    const bd    = byDay(feeds);
+    const bdAll = byDayAllFeeds(feeds);
+    if (!isNaN(tv) && !isNaN(hv)) renderHero(tv, hv, bdAll);
+    renderTiles(bd, bdAll);
+    renderWeekTable(bd, bdAll);
+    updateUnitLabels();
+  }
+}
+
+function updateUnitLabels() {
+  const lbl = unitLabel();
+  ['gMaxTunit','gMinTunit'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = lbl;
+  });
+  document.getElementById('mainTempUnit').textContent = lbl;
+}
 
 /* ── CLOCK ── */
 function tick() {
@@ -874,15 +1113,16 @@ function tick() {
   const h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
   const ampm = h >= 12 ? 'PM' : 'AM';
   const h12  = h % 12 || 12;
-  document.getElementById('heroDate').innerHTML =
-    `${WJS[d.getDay()]}<br>${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}<br>${h12}:${p(m)}:${p(s)} ${ampm}`;
+  const timeStr = `${h12}:${p(m)}:${p(s)} ${ampm}`;
+  const dateStr = `${WJS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`;
+  document.getElementById('mainClock').textContent = `${dateStr}  ·  ${timeStr}`;
+  document.getElementById('navClock').textContent  = timeStr;
 }
 tick(); setInterval(tick, 1000);
 
 /* ── HELPERS ── */
 const toLoc   = s => new Date(new Date(s).toLocaleString('en-US', { timeZone: TZ }));
 const p2      = n => String(n).padStart(2,'0');
-const fmtTime = s => { const d=toLoc(s); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
 const fmtDT   = s => { const d=toLoc(s); return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`; };
 const ago     = s => {
   const sec = Math.floor((Date.now()-new Date(s))/1000);
@@ -896,13 +1136,14 @@ const avg     = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
 /* ── STATUS ── */
 function setSensor(state, label) {
   const dot = document.getElementById('sDot');
-  dot.className = 'dot dot-'+state;
+  dot.className = 'ind-dot ind-' + state;
   const el = document.getElementById('sLabel');
   el.textContent = label;
-  el.style.color = state==='on' ? 'var(--green)' : state==='off' ? 'var(--pink)' : 'var(--text2)';
+  el.style.color = state==='on' ? 'var(--green-ok)' : state==='off' ? 'var(--red-warn)' : 'var(--text2)';
+  const badge = document.getElementById('liveBadge');
+  badge.style.display = state === 'on' ? 'flex' : 'none';
 }
 
-/* ── RANGO DE SEMANA ACTUAL (para query ThingSpeak por fecha) ── */
 function weekRange() {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
   const wd  = now.getDay() === 0 ? 7 : now.getDay();
@@ -914,17 +1155,13 @@ function weekRange() {
   };
 }
 
-/* ── GROUP BY DAY — registros oficiales (field3=1-7, field4=0-23) ── */
-// Los heartbeats no tienen field3/field4 válidos → quedan excluidos
 function byDay(arr) {
   const r = {};
   arr.forEach(f => {
-    const d = parseInt(f.field3);
-    const n = parseInt(f.field4);
-    if (isNaN(d) || d < 1 || d > 7)  return;
-    if (isNaN(n) || n < 0 || n > 23) return;
+    const d = parseInt(f.field3), n = parseInt(f.field4);
+    if (isNaN(d)||d<1||d>7||isNaN(n)||n<0||n>23) return;
     if (!r[d]) r[d] = { t:[], h:[], feeds:[] };
-    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
+    const tv=parseFloat(f.field1), hv=parseFloat(f.field2);
     if (!isNaN(tv)) r[d].t.push(tv);
     if (!isNaN(hv)) r[d].h.push(hv);
     r[d].feeds.push(f);
@@ -932,31 +1169,27 @@ function byDay(arr) {
   return r;
 }
 
-/* ── GROUP BY DAY — todos los feeds (incluye heartbeats) ── */
-// Usado para max/min en tiempo real del día de hoy
 function byDayAllFeeds(arr) {
   const r = {};
   arr.forEach(f => {
-    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
-    if (isNaN(tv) && isNaN(hv)) return;
+    const tv=parseFloat(f.field1), hv=parseFloat(f.field2);
+    if (isNaN(tv)&&isNaN(hv)) return;
     let d = parseInt(f.field3);
-    if (isNaN(d) || d < 1 || d > 7) {
-      const loc = toLoc(f.created_at);
-      d = loc.getDay() === 0 ? 7 : loc.getDay();
-    }
-    if (!r[d]) r[d] = { t:[], h:[] };
+    if (isNaN(d)||d<1||d>7) { const loc=toLoc(f.created_at); d=loc.getDay()===0?7:loc.getDay(); }
+    if (!r[d]) r[d]={t:[],h:[]};
     if (!isNaN(tv)) r[d].t.push(tv);
     if (!isNaN(hv)) r[d].h.push(hv);
   });
   return r;
 }
 
-/* ── RENDER: HERO CARDS ── */
+/* ── RENDER HERO ── */
 function renderHero(tv, hv, bdAll) {
-  document.getElementById('hTemp').innerHTML = tv.toFixed(1)+'<span style="font-size:16px">°C</span>';
-  document.getElementById('hHum').innerHTML  = hv.toFixed(1)+'<span style="font-size:16px">%</span>';
-  document.getElementById('hTempStatus').innerHTML =
-    '<div class="online-badge"><span class="dot dot-on" style="width:6px;height:6px"></span>Online</div>';
+  const dispT = toDisplay(tv);
+  document.getElementById('mainTemp').innerHTML =
+    dispT.toFixed(1) + `<span class="main-temp-unit" id="mainTempUnit">${unitLabel()}</span>`;
+
+  document.getElementById('mainHum').textContent  = hv.toFixed(1) + '%';
 
   const dh   = todayWD();
   const dt   = bdAll[dh];
@@ -965,14 +1198,22 @@ function renderHero(tv, hv, bdAll) {
   const maxT = Math.max(...tArr), minT = Math.min(...tArr);
   const maxH = Math.max(...hArr), minH = Math.min(...hArr);
 
-  document.getElementById('hTmax').innerHTML = maxT.toFixed(1)+'<span style="font-size:14px">°C</span>';
-  document.getElementById('hTmin').innerHTML = minT.toFixed(1)+'<span style="font-size:14px">°C</span>';
-  document.getElementById('hHmax').textContent = '▲ '+maxH.toFixed(1)+' %';
-  document.getElementById('hHmin').textContent = '▼ '+minH.toFixed(1)+' %';
+  document.getElementById('gMaxT').textContent = toDisplay(maxT).toFixed(1);
+  document.getElementById('gMinT').textContent = toDisplay(minT).toFixed(1);
+  document.getElementById('gMaxH').textContent = maxH.toFixed(1);
+  document.getElementById('gMinH').textContent = minH.toFixed(1);
+  document.getElementById('mainMaxH').textContent = maxH.toFixed(1) + '%';
+  document.getElementById('mainMinH').textContent = minH.toFixed(1) + '%';
+  updateUnitLabels();
+
+  // Progress bars (based on raw C for scale)
+  document.getElementById('bMaxT').style.width = Math.min(100, maxT/50*100) + '%';
+  document.getElementById('bMinT').style.width = Math.min(100, minT/50*100) + '%';
+  document.getElementById('bMaxH').style.width = maxH + '%';
+  document.getElementById('bMinH').style.width = minH + '%';
 }
 
-/* ── RENDER: TABLA HOURLY (registros de hoy) ── */
-/* ── RENDER: TILES SEMANALES ── */
+/* ── RENDER TILES ── */
 function renderTiles(bd, bdAll) {
   const dh  = todayWD();
   const now = new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
@@ -982,434 +1223,311 @@ function renderTiles(bd, bdAll) {
 
   document.getElementById('weekOf').textContent =
     p2(mon.getMonth()+1)+'/'+p2(mon.getDate())+'/'+mon.getFullYear();
-  document.getElementById('weekMeta').textContent =
-    p2(mon.getDate())+' '+MONTHS[mon.getMonth()]+' — '+p2(sun.getDate())+' '+MONTHS[sun.getMonth()]+' '+sun.getFullYear();
+  const metaStr = p2(mon.getDate())+' '+MONTHS[mon.getMonth()]+' — '+p2(sun.getDate())+' '+MONTHS[sun.getMonth()]+' '+sun.getFullYear();
+  document.getElementById('weekMeta').textContent = metaStr;
+  document.getElementById('weekRangeTag').textContent = metaStr;
 
   const wrap = document.getElementById('tiles');
   wrap.innerHTML = '';
   for (let d=1; d<=7; d++) {
-    const isToday = d===dh, isFut = d>dh;
-    // Oficial primero; si no hay y no es futuro, usar heartbeats
-    const src    = bd[d] || (!isFut ? bdAll[d] : null);
+    const isToday=d===dh, isFut=d>dh;
+    const src = bd[d] || (!isFut ? bdAll[d] : null);
     const hasDat = src && src.t && src.t.length;
-    const maxT   = hasDat ? Math.max(...src.t).toFixed(1) : null;
+    const maxTC  = hasDat ? Math.max(...src.t) : null;
     const maxH   = hasDat ? Math.max(...src.h).toFixed(1) : null;
     const offRec = bd[d] ? bd[d].t.length : 0;
-    const isHB   = hasDat && !bd[d]; // datos solo de heartbeat
+    const isHB   = hasDat && !bd[d];
 
     const tile = document.createElement('div');
-    tile.className = 'w-tile'+(hasDat?' has-data':'')+(isToday?' is-today':'')+(isFut?' is-future':'');
+    tile.className = 'day-tile'+(hasDat?' has-data':'')+(isToday?' is-today':'')+(isFut?' is-future':'');
     tile.innerHTML =
-      (isToday?'<div class="w-tile-badge">TODAY</div>':'')+
-      '<div class="w-tile-day">'+DAYS_SHORT[d-1]+'</div>'+
-      (maxT!==null
-        ? '<div class="w-tile-temp">'+maxT+'°</div>'+
-          '<div class="w-tile-hum">'+maxH+'%</div>'+
-          '<div class="w-tile-cnt">'+(isHB?'~hb':offRec+'/24')+'</div>'
-        : '<div class="w-tile-dash">'+(isFut?'···':'—')+'</div>');
+      '<div class="tile-day">'+DAYS_SHORT[d-1]+'</div>'+
+      (maxTC!==null
+        ? '<div class="tile-temp">'+toDisplay(maxTC).toFixed(1)+'°</div>'+
+          '<div class="tile-hum">'+maxH+'%</div>'+
+          '<div class="tile-rec">'+(isHB?'~hb':offRec+'/24')+'</div>'
+        : '<div class="tile-empty">'+(isFut?'···':'—')+'</div>');
     wrap.appendChild(tile);
   }
 }
 
-/* ── RENDER: TABLA SEMANAL ── */
+/* ── RENDER WEEK TABLE ── */
 function renderWeekTable(bd, bdAll) {
   const dh = todayWD();
   const tb = document.getElementById('weekTb');
   tb.innerHTML = '';
   let any = false;
   for (let d=1; d<=7; d++) {
-    const isToday = d===dh, isFut = d>dh;
-    const dt      = bd[d];                          // registros oficiales
-    const dtAll   = bdAll[d];                        // todos los feeds (incluye heartbeats)
-    // Fuente de datos: oficial si existe, sino heartbeats para días pasados/hoy, nada para futuros
-    const dtLive  = dt || (!isFut ? dtAll : null);
+    const isToday=d===dh, isFut=d>dh;
+    const dt    = bd[d];
+    const dtAll = bdAll[d];
+    const dtLive = dt||(!isFut?dtAll:null);
     const tr = document.createElement('tr');
-    if (!dtLive || !dtLive.t || !dtLive.t.length) {
-      tr.innerHTML = `<td style="color:${isToday?'var(--green)':''};font-weight:${isToday?600:400}">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td><td class="c-muted" colspan="7">${isFut?'Pending':'—'}</td>`;
+    if (!dtLive||!dtLive.t||!dtLive.t.length) {
+      tr.innerHTML = `<td style="color:${isToday?'var(--brass2)':'var(--text)'};font-weight:${isToday?500:400}">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td><td class="c-muted" colspan="7">${isFut?'Pending':'—'}</td>`;
     } else {
       any = true;
-      const t = dtLive.t, h = dtLive.h;
+      const t=dtLive.t, h=dtLive.h;
       const offRec = dt ? dt.t.length : 0;
-      // Indicador: si no hay registros oficiales, mostrar (~) para señalar que son datos de heartbeat
-      const recLabel = dt ? `${offRec}/24` : '<span title="Estimated from heartbeats" style="color:var(--muted)">~hb</span>';
+      const recLabel = dt ? `${offRec}/24` : `<span style="color:var(--text3)">~hb</span>`;
       tr.innerHTML = `
-        <td style="color:${isToday?'var(--green)':'var(--text)'};font-weight:600">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
-        <td class="mono c-coral">${avg(t).toFixed(1)}</td>
-        <td class="mono" style="color:var(--coral2)">${Math.max(...t).toFixed(1)}</td>
-        <td class="mono c-teal">${Math.min(...t).toFixed(1)}</td>
-        <td class="mono c-teal">${avg(h).toFixed(1)}</td>
-        <td class="mono" style="color:#8fd4e8">${Math.max(...h).toFixed(1)}</td>
-        <td class="mono c-teal">${Math.min(...h).toFixed(1)}</td>
+        <td style="color:${isToday?'var(--brass2)':'var(--text)'};font-weight:500">${DAYS_LONG[d-1]}${isToday?' ◀':''}</td>
+        <td class="mono c-warm">${toDisplay(avg(t)).toFixed(1)}</td>
+        <td class="mono" style="color:var(--warm)">${toDisplay(Math.max(...t)).toFixed(1)}</td>
+        <td class="mono c-cool">${toDisplay(Math.min(...t)).toFixed(1)}</td>
+        <td class="mono c-cool">${avg(h).toFixed(1)}</td>
+        <td class="mono c-steel">${Math.max(...h).toFixed(1)}</td>
+        <td class="mono c-cool">${Math.min(...h).toFixed(1)}</td>
         <td class="mono c-muted">${recLabel}</td>`;
     }
     tb.appendChild(tr);
   }
-  if (!any) tb.innerHTML='<tr><td colspan="8" class="empty-row">No weekly data yet</td></tr>';
+  if (!any) tb.innerHTML='<tr><td colspan="8" class="empty-td">No weekly data yet</td></tr>';
 }
 
 /* ── PREVIOUS WEEKS ── */
-// Calcula el rango Lun-Dom de una semana anterior (weeksAgo=1 = semana pasada)
 function prevWeekRange(weeksAgo) {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
-  const wd  = now.getDay() === 0 ? 7 : now.getDay();
+  const wd  = now.getDay()===0?7:now.getDay();
   const mon = new Date(now);
-  mon.setDate(now.getDate() - wd + 1 - (weeksAgo * 7));
-  mon.setHours(0, 0, 0, 0);
-  const sun = new Date(mon);
-  sun.setDate(mon.getDate() + 6);
-  sun.setHours(23, 59, 59, 0);
+  mon.setDate(now.getDate()-wd+1-(weeksAgo*7)); mon.setHours(0,0,0,0);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6); sun.setHours(23,59,59,0);
   const label = `${p2(mon.getDate())} ${MONTHS[mon.getMonth()]} — ${p2(sun.getDate())} ${MONTHS[sun.getMonth()]} ${sun.getFullYear()}`;
   return {
     start: mon.toISOString().slice(0,19).replace('T','%20'),
     end:   sun.toISOString().slice(0,19).replace('T','%20'),
-    label,
-    monStr: `${p2(mon.getMonth()+1)}/${p2(mon.getDate())}/${mon.getFullYear()}`
+    label, monStr: `${p2(mon.getMonth()+1)}/${p2(mon.getDate())}/${mon.getFullYear()}`
   };
 }
 
-// Construye byDay desde feeds de una semana pasada
-// Para semanas pasadas usamos field3 si existe, sino el timestamp
 function byDayPrev(arr) {
   const r = {};
   arr.forEach(f => {
-    const tv = parseFloat(f.field1), hv = parseFloat(f.field2);
-    if (isNaN(tv) && isNaN(hv)) return;
-    // Registros oficiales tienen field3+field4 validos
-    let d = parseInt(f.field3);
-    const n = parseInt(f.field4);
-    const isOfficial = !isNaN(d) && d >= 1 && d <= 7 && !isNaN(n) && n >= 0 && n <= 23;
-    if (!isOfficial) {
-      // Heartbeat — derivar dia del timestamp
-      const loc = toLoc(f.created_at);
-      d = loc.getDay() === 0 ? 7 : loc.getDay();
-    }
-    if (d < 1 || d > 7) return;
-    if (!r[d]) r[d] = { t:[], h:[], official: 0 };
+    const tv=parseFloat(f.field1), hv=parseFloat(f.field2);
+    if (isNaN(tv)&&isNaN(hv)) return;
+    let d=parseInt(f.field3); const n=parseInt(f.field4);
+    const off = !isNaN(d)&&d>=1&&d<=7&&!isNaN(n)&&n>=0&&n<=23;
+    if (!off) { const loc=toLoc(f.created_at); d=loc.getDay()===0?7:loc.getDay(); }
+    if (d<1||d>7) return;
+    if (!r[d]) r[d]={t:[],h:[],official:0};
     if (!isNaN(tv)) r[d].t.push(tv);
     if (!isNaN(hv)) r[d].h.push(hv);
-    if (isOfficial) r[d].official++;
+    if (off) r[d].official++;
   });
   return r;
 }
 
-// Descarga y renderiza las semanas anteriores (hasta 4 semanas)
 async function fetchPrevWeeks() {
   const wrap = document.getElementById('prevWeeksWrap');
-  wrap.innerHTML = '';
-  const PREV_WEEKS = 4;
+  wrap.innerHTML='';
+  const PREV = 4;
   let anyData = false;
-
-  for (let w = 1; w <= PREV_WEEKS; w++) {
-    const { start, end, label, monStr } = prevWeekRange(w);
+  for (let w=1; w<=PREV; w++) {
+    const {start,end,label,monStr} = prevWeekRange(w);
     try {
-      const url = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&start=${start}&end=${end}&results=8000`;
-      const json = await fetch(url).then(r => r.json());
-      const wFeeds = json.feeds || [];
+      const json = await fetch(`https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&start=${start}&end=${end}&results=8000`).then(r=>r.json());
+      const wFeeds = json.feeds||[];
       if (!wFeeds.length) continue;
-
       anyData = true;
       const bd = byDayPrev(wFeeds);
-
-      // Construir tabla HTML de la semana
-      let rows = '';
-      for (let d = 1; d <= 7; d++) {
-        const dt      = bd[d];
-        const dayName = DAYS_LONG[d-1];
-        if (!dt || !dt.t.length) {
-          rows += `<tr><td style="color:var(--text2)">${dayName}</td><td class="c-muted" colspan="7">—</td></tr>`;
-        } else {
-          const t = dt.t, h = dt.h;
-          rows += `<tr>
-            <td style="font-weight:600">${dayName}</td>
-            <td class="mono c-coral">${avg(t).toFixed(1)}</td>
-            <td class="mono" style="color:var(--coral2)">${Math.max(...t).toFixed(1)}</td>
-            <td class="mono c-teal">${Math.min(...t).toFixed(1)}</td>
-            <td class="mono c-teal">${avg(h).toFixed(1)}</td>
-            <td class="mono" style="color:#8fd4e8">${Math.max(...h).toFixed(1)}</td>
-            <td class="mono c-teal">${Math.min(...h).toFixed(1)}</td>
-            <td class="mono c-muted">${dt.official}</td>
-          </tr>`;
-        }
+      let rows='';
+      for (let d=1;d<=7;d++) {
+        const dt=bd[d];
+        if (!dt||!dt.t.length) { rows+=`<tr><td style="color:var(--text2)">${DAYS_LONG[d-1]}</td><td class="c-muted" colspan="7">—</td></tr>`; continue; }
+        const t=dt.t, h=dt.h;
+        rows+=`<tr>
+          <td style="font-weight:500">${DAYS_LONG[d-1]}</td>
+          <td class="mono c-warm">${toDisplay(avg(t)).toFixed(1)}</td>
+          <td class="mono" style="color:var(--warm)">${toDisplay(Math.max(...t)).toFixed(1)}</td>
+          <td class="mono c-cool">${toDisplay(Math.min(...t)).toFixed(1)}</td>
+          <td class="mono c-cool">${avg(h).toFixed(1)}</td>
+          <td class="mono c-steel">${Math.max(...h).toFixed(1)}</td>
+          <td class="mono c-cool">${Math.min(...h).toFixed(1)}</td>
+          <td class="mono c-muted">${dt.official}</td>
+        </tr>`;
       }
-
-      // CSV de la semana
-      const csvId = `csv-week-${w}`;
-
       const card = document.createElement('div');
-      card.className = 's-card mb-5';
-      card.innerHTML = `
-        <div class="s-card-head">
-          <div class="s-card-title">&#9679; Week of ${monStr}</div>
-          <span class="s-card-meta">${label}</span>
+      card.className='week-card'; card.style.marginBottom='12px';
+      card.innerHTML=`
+        <div class="week-card-head">
+          <div class="week-card-title">&#9679; Week of ${monStr}</div>
+          <div class="week-card-meta">${label}</div>
         </div>
-        <div class="tbl-wrap" style="padding:0 16px 0">
+        <div class="data-table-wrap" style="padding:0 16px 0">
           <table>
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Avg °C</th><th>Max °C</th><th>Min °C</th>
-                <th>Avg %</th><th>Max %</th><th>Min %</th>
-                <th>Records</th>
-              </tr>
-            </thead>
+            <thead><tr>
+              <th>Day</th><th>Avg °C</th><th>Max °C</th><th>Min °C</th>
+              <th>Avg %</th><th>Max %</th><th>Min %</th><th>Records</th>
+            </tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
-        <button class="dl-btn" id="${csvId}">&#8595; DOWNLOAD CSV</button>`;
+        <div style="height:14px"></div>`;
       wrap.appendChild(card);
-
-      // CSV handler para esa semana
-      const wFeedsSnap = [...wFeeds];
-      document.getElementById(csvId).addEventListener('click', () => {
-        const bd2 = byDayPrev(wFeedsSnap);
-        let csv = 'Day,Avg Temp (C),Max Temp,Min Temp,Avg Hum (%),Max Hum,Min Hum,Records\n';
-        for (let d = 1; d <= 7; d++) {
-          const dt2 = bd2[d];
-          if (!dt2||!dt2.t.length) { csv+=`"${DAYS_LONG[d-1]}","—","—","—","—","—","—","0"\n`; continue; }
-          const t=dt2.t, h=dt2.h;
-          csv+=`"${DAYS_LONG[d-1]}","${avg(t).toFixed(1)}","${Math.max(...t).toFixed(1)}","${Math.min(...t).toFixed(1)}","${avg(h).toFixed(1)}","${Math.max(...h).toFixed(1)}","${Math.min(...h).toFixed(1)}","${dt2.official}"\n`;
-        }
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'}));
-        a.download = `climalog_week_${monStr.replace(/\//g,'-')}.csv`;
-        a.click();
-      });
-
-    } catch(e) {
-      console.warn(`Error cargando semana -${w}:`, e);
-    }
+    } catch(e) { console.warn(`Error loading week -${w}:`, e); }
   }
-
   if (!anyData) {
-    wrap.innerHTML = '<div class="s-card" style="text-align:center;padding:24px;color:var(--muted)">No previous week data found in ThingSpeak.</div>';
+    wrap.innerHTML='<div style="text-align:center;padding:24px;color:var(--text2);font-family:\'DM Mono\',monospace;font-size:10px">No previous week data found.</div>';
   }
 }
 
 /* ── FULL HISTORY ── */
-let fhLoaded = false;
-let fhOpen   = false;
+let fhLoaded=false, fhOpen=false;
 
 function toggleFullHistory() {
-  const wrap = document.getElementById('fullHistWrap');
-  const icon = document.getElementById('fhIcon');
-  fhOpen = !fhOpen;
-  wrap.style.display = fhOpen ? 'block' : 'none';
-  icon.style.transform = fhOpen ? 'rotate(90deg)' : 'rotate(0deg)';
-  if (fhOpen && !fhLoaded) fetchFullHistory();
+  const wrap=document.getElementById('fullHistWrap');
+  const arrow=document.getElementById('fhArrow');
+  fhOpen=!fhOpen;
+  wrap.style.display=fhOpen?'block':'none';
+  arrow.style.transform=fhOpen?'rotate(90deg)':'rotate(0deg)';
+  if (fhOpen&&!fhLoaded) fetchFullHistory();
 }
 
-// Agrupa todos los feeds por ISO week (YYYY-Www)
 function isoWeekKey(dateStr) {
-  const d  = toLoc(dateStr);
-  const tmp = new Date(d);
-  tmp.setHours(0, 0, 0, 0);
-  tmp.setDate(tmp.getDate() + 3 - ((tmp.getDay() + 6) % 7));
-  const w1 = new Date(tmp.getFullYear(), 0, 4);
-  const wn = 1 + Math.round(((tmp - w1) / 86400000 - 3 + ((w1.getDay() + 6) % 7)) / 7);
+  const d=toLoc(dateStr), tmp=new Date(d);
+  tmp.setHours(0,0,0,0); tmp.setDate(tmp.getDate()+3-((tmp.getDay()+6)%7));
+  const w1=new Date(tmp.getFullYear(),0,4);
+  const wn=1+Math.round(((tmp-w1)/86400000-3+((w1.getDay()+6)%7))/7);
   return `${tmp.getFullYear()}-W${String(wn).padStart(2,'0')}`;
 }
 
-// Etiqueta legible para una semana dado su primer feed
-function weekLabel(monDate) {
-  const sun = new Date(monDate);
-  sun.setDate(monDate.getDate() + 6);
-  return `${p2(monDate.getDate())} ${MONTHS[monDate.getMonth()]} — ${p2(sun.getDate())} ${MONTHS[sun.getMonth()]} ${sun.getFullYear()}`;
-}
-
-function weekMonStr(monDate) {
-  return `${p2(monDate.getMonth()+1)}/${p2(monDate.getDate())}/${monDate.getFullYear()}`;
-}
-
-// Obtiene el lunes de la semana ISO de un feed
 function getMonday(dateStr) {
-  const d = toLoc(dateStr);
-  const day = d.getDay() || 7;
-  const mon = new Date(d);
-  mon.setDate(d.getDate() - day + 1);
-  mon.setHours(0,0,0,0);
+  const d=toLoc(dateStr), day=d.getDay()||7;
+  const mon=new Date(d); mon.setDate(d.getDate()-day+1); mon.setHours(0,0,0,0);
   return mon;
 }
 
+function weekLabel(mon) {
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  return `${p2(mon.getDate())} ${MONTHS[mon.getMonth()]} — ${p2(sun.getDate())} ${MONTHS[sun.getMonth()]} ${sun.getFullYear()}`;
+}
+function weekMonStr(mon) { return `${p2(mon.getMonth()+1)}/${p2(mon.getDate())}/${mon.getFullYear()}`; }
+
 async function fetchFullHistory() {
-  const wrap  = document.getElementById('fullHistWrap');
-  const meta  = document.getElementById('fhMeta');
-  wrap.innerHTML = '<div style="padding:20px;text-align:center"><span class="spin"></span> Fetching all data from ThingSpeak...</div>';
-
+  const wrap=document.getElementById('fullHistWrap'), meta=document.getElementById('fhMeta');
+  wrap.innerHTML='<div style="padding:20px;text-align:center;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text2);letter-spacing:2px"><span class="spin"></span>Fetching all data...</div>';
   try {
-    // Una sola peticion: todos los registros del canal (max 8000 por llamada)
-    // Usamos results=8000 que es el maximo de ThingSpeak
-    const url = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=8000`;
-    const json = await fetch(url).then(r => r.json());
-    const allFeeds = json.feeds || [];
+    const json = await fetch(`https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=8000`).then(r=>r.json());
+    const allFeeds = json.feeds||[];
+    if (!allFeeds.length) { wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3)">No data found.</div>'; return; }
 
-    if (!allFeeds.length) {
-      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No data found.</div>';
-      return;
-    }
-
-    // Agrupar por semana ISO
-    const weekMap = {};  // key → { feeds:[], monday: Date }
-    allFeeds.forEach(f => {
-      const key = isoWeekKey(f.created_at);
-      if (!weekMap[key]) weekMap[key] = { feeds:[], monday: getMonday(f.created_at) };
+    const weekMap={};
+    allFeeds.forEach(f=>{
+      const key=isoWeekKey(f.created_at);
+      if (!weekMap[key]) weekMap[key]={feeds:[],monday:getMonday(f.created_at)};
       weekMap[key].feeds.push(f);
     });
 
-    // Ordenar semanas de más reciente a más antigua
-    const weekKeys = Object.keys(weekMap).sort((a,b) => b.localeCompare(a));
+    const weekKeys=Object.keys(weekMap).sort((a,b)=>b.localeCompare(a));
+    const currentKey=isoWeekKey(new Date().toISOString());
+    const histKeys=weekKeys.filter(k=>k!==currentKey);
 
-    // Semana actual — skip (ya está en Current Week)
-    const currentKey = isoWeekKey(new Date().toISOString());
-    const histKeys   = weekKeys.filter(k => k !== currentKey);
+    meta.textContent=`${histKeys.length} week${histKeys.length!==1?'s':''} · ${allFeeds.length} entries`;
+    wrap.innerHTML='';
+    fhLoaded=true;
 
-    meta.textContent = `${histKeys.length} week${histKeys.length!==1?'s':''} · ${allFeeds.length} total entries`;
-    wrap.innerHTML = '';
-    fhLoaded = true;
+    histKeys.forEach((key,idx)=>{
+      const {feeds:wf, monday}=weekMap[key];
+      const bd=byDayPrev(wf);
+      const label=weekLabel(monday), monS=weekMonStr(monday);
+      const bodyId=`fhb-${idx}`;
+      const allT=wf.map(f=>parseFloat(f.field1)).filter(v=>!isNaN(v));
+      const allH=wf.map(f=>parseFloat(f.field2)).filter(v=>!isNaN(v));
+      const wAvgT=allT.length?avg(allT).toFixed(1):'—';
+      const wMaxT=allT.length?Math.max(...allT).toFixed(1):'—';
+      const wMinT=allT.length?Math.min(...allT).toFixed(1):'—';
 
-    histKeys.forEach((key, idx) => {
-      const { feeds: wf, monday } = weekMap[key];
-      const bd    = byDayPrev(wf);
-      const label = weekLabel(monday);
-      const monS  = weekMonStr(monday);
-      const csvId = `fh-csv-${idx}`;
-      const bodyId= `fh-body-${idx}`;
-
-      // Calcular resumen rápido de la semana para el header
-      const allT = wf.map(f=>parseFloat(f.field1)).filter(v=>!isNaN(v));
-      const allH = wf.map(f=>parseFloat(f.field2)).filter(v=>!isNaN(v));
-      const wAvgT = allT.length ? avg(allT).toFixed(1) : '—';
-      const wMaxT = allT.length ? Math.max(...allT).toFixed(1) : '—';
-      const wMinT = allT.length ? Math.min(...allT).toFixed(1) : '—';
-
-      // Filas de la tabla
-      let rows = '';
-      for (let d = 1; d <= 7; d++) {
-        const dt = bd[d];
-        if (!dt || !dt.t.length) {
-          rows += `<tr><td style="color:var(--text2)">${DAYS_LONG[d-1]}</td><td class="c-muted" colspan="7">—</td></tr>`;
-        } else {
-          const t = dt.t, h = dt.h;
-          rows += `<tr>
-            <td style="font-weight:600">${DAYS_LONG[d-1]}</td>
-            <td class="mono c-coral">${avg(t).toFixed(1)}</td>
-            <td class="mono" style="color:var(--coral2)">${Math.max(...t).toFixed(1)}</td>
-            <td class="mono c-teal">${Math.min(...t).toFixed(1)}</td>
-            <td class="mono c-teal">${avg(h).toFixed(1)}</td>
-            <td class="mono" style="color:#8fd4e8">${Math.max(...h).toFixed(1)}</td>
-            <td class="mono c-teal">${Math.min(...h).toFixed(1)}</td>
-            <td class="mono c-muted">${dt.official}</td>
-          </tr>`;
-        }
+      let rows='';
+      for (let d=1;d<=7;d++) {
+        const dt=bd[d];
+        if (!dt||!dt.t.length) { rows+=`<tr><td style="color:var(--text2)">${DAYS_LONG[d-1]}</td><td class="c-muted" colspan="7">—</td></tr>`; continue; }
+        const t=dt.t, h=dt.h;
+        rows+=`<tr>
+          <td style="font-weight:500">${DAYS_LONG[d-1]}</td>
+          <td class="mono c-warm">${toDisplay(avg(t)).toFixed(1)}</td>
+          <td class="mono" style="color:var(--warm)">${toDisplay(Math.max(...t)).toFixed(1)}</td>
+          <td class="mono c-cool">${toDisplay(Math.min(...t)).toFixed(1)}</td>
+          <td class="mono c-cool">${avg(h).toFixed(1)}</td>
+          <td class="mono c-steel">${Math.max(...h).toFixed(1)}</td>
+          <td class="mono c-cool">${Math.min(...h).toFixed(1)}</td>
+          <td class="mono c-muted">${dt.official}</td>
+        </tr>`;
       }
 
-      const card = document.createElement('div');
-      card.className = 'fh-week-card';
-      card.innerHTML = `
-        <div class="fh-week-hdr" onclick="toggleFHWeek('${bodyId}', this)">
-          <div>
-            <span class="fh-week-title">&#9679; Week of ${monS}</span>
-            <span style="margin-left:14px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace">${label}</span>
+      const sec=document.createElement('div');
+      sec.className='hist-section';
+      sec.innerHTML=`
+        <div class="hist-toggle" onclick="toggleFHWeek('${bodyId}',this)">
+          <div class="hist-toggle-left">
+            <span class="hist-toggle-title">&#9679; Week of ${monS}</span>
+            <span class="hist-toggle-meta">${label}</span>
           </div>
           <div style="display:flex;align-items:center;gap:16px">
-            <span style="font-size:11px;color:var(--coral);font-family:'Space Mono',monospace">
-              avg ${wAvgT}° &nbsp; ▲${wMaxT}° &nbsp; ▼${wMinT}°
-            </span>
-            <span class="fh-toggle">▶</span>
+            <span class="hist-toggle-stats">avg ${toDisplay(parseFloat(wAvgT)).toFixed(1)}${unitLabel()} ▲${toDisplay(parseFloat(wMaxT)).toFixed(1)}° ▼${toDisplay(parseFloat(wMinT)).toFixed(1)}°</span>
+            <span class="hist-arrow">▶</span>
           </div>
         </div>
-        <div id="${bodyId}" class="fh-week-body" style="display:none">
-          <div class="tbl-wrap">
+        <div id="${bodyId}" class="hist-body" style="display:none">
+          <div class="data-table-wrap" style="padding:0 16px">
             <table>
               <thead><tr>
-                <th>Day</th>
-                <th>Avg °C</th><th>Max °C</th><th>Min °C</th>
-                <th>Avg %</th><th>Max %</th><th>Min %</th>
-                <th>Records</th>
+                <th>Day</th><th>Avg °C</th><th>Max °C</th><th>Min °C</th>
+                <th>Avg %</th><th>Max %</th><th>Min %</th><th>Records</th>
               </tr></thead>
               <tbody>${rows}</tbody>
             </table>
           </div>
-          <button class="dl-btn" id="${csvId}">&#8595; DOWNLOAD CSV</button>
+          <div style="height:12px"></div>
         </div>`;
-      wrap.appendChild(card);
-
-      // CSV handler
-      const wfSnap = [...wf];
-      document.getElementById(csvId).addEventListener('click', () => {
-        const bd2 = byDayPrev(wfSnap);
-        let csv = 'Day,Avg Temp (C),Max Temp,Min Temp,Avg Hum (%),Max Hum,Min Hum,Records\n';
-        for (let d = 1; d <= 7; d++) {
-          const dt2 = bd2[d];
-          if (!dt2||!dt2.t.length) { csv+=`"${DAYS_LONG[d-1]}","—","—","—","—","—","—","0"\n`; continue; }
-          const t=dt2.t, h=dt2.h;
-          csv+=`"${DAYS_LONG[d-1]}","${avg(t).toFixed(1)}","${Math.max(...t).toFixed(1)}","${Math.min(...t).toFixed(1)}","${avg(h).toFixed(1)}","${Math.max(...h).toFixed(1)}","${Math.min(...h).toFixed(1)}","${dt2.official}"\n`;
-        }
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-        a.download = `climalog_${monS.replace(/\//g,'-')}.csv`;
-        a.click();
-      });
+      wrap.appendChild(sec);
     });
 
-    if (!histKeys.length) {
-      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No previous weeks found yet.</div>';
-    }
-
+    if (!histKeys.length) wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-family:\'DM Mono\',monospace;font-size:10px">No previous weeks found yet.</div>';
   } catch(e) {
     console.error(e);
-    wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--pink)">Error loading history. Try again.</div>';
+    wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--red-warn);font-family:\'DM Mono\',monospace;font-size:10px">Error loading history. Please try again.</div>';
   }
 }
 
 function toggleFHWeek(bodyId, hdr) {
-  const body   = document.getElementById(bodyId);
-  const toggle = hdr.querySelector('.fh-toggle');
-  const open   = body.style.display === 'none';
-  body.style.display  = open ? 'block' : 'none';
-  toggle.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+  const body=document.getElementById(bodyId);
+  const arrow=hdr.querySelector('.hist-arrow');
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  arrow.style.transform=open?'rotate(90deg)':'rotate(0deg)';
 }
 
 /* ── FETCH ── */
 async function fetchData() {
-  setSensor('wait','LOADING...');
+  setSensor('wait','CONNECTING');
   try {
-    const { start, end } = weekRange();
-    // Peticion 1: toda la semana por fecha (registros oficiales)
-    const urlWeek = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&start=${start}&end=${end}&results=8000`;
-    // Peticion 2: ultimos 500 feeds (heartbeats recientes para max/min live)
-    const urlLive = `https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=500`;
-
-    const [jsonWeek, jsonLive] = await Promise.all([
-      fetch(urlWeek).then(r=>r.json()),
-      fetch(urlLive).then(r=>r.json())
+    const {start,end}=weekRange();
+    const [jsonWeek,jsonLive]=await Promise.all([
+      fetch(`https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&start=${start}&end=${end}&results=8000`).then(r=>r.json()),
+      fetch(`https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=500`).then(r=>r.json())
     ]);
 
-    // Combinar y deduplicar por entry_id
-    const combined = [...(jsonWeek.feeds||[]), ...(jsonLive.feeds||[])];
-    const seen = new Set();
-    feeds = combined.filter(f=>{
-      if (seen.has(f.entry_id)) return false;
-      seen.add(f.entry_id); return true;
-    }).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    const combined=[...(jsonWeek.feeds||[]),...(jsonLive.feeds||[])];
+    const seen=new Set();
+    feeds=combined.filter(f=>{ if(seen.has(f.entry_id))return false; seen.add(f.entry_id); return true; })
+      .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
 
     if (!feeds.length) { setSensor('off','NO DATA'); return; }
 
-    const last   = feeds[feeds.length-1];
-    const tv     = parseFloat(last.field1), hv = parseFloat(last.field2);
-    const ok     = !isNaN(tv) && !isNaN(hv);
-    const sec    = (Date.now()-new Date(last.created_at))/1000;
-    const online = ok && sec<=OFFLINE_S;
+    const last=feeds[feeds.length-1];
+    const tv=parseFloat(last.field1), hv=parseFloat(last.field2);
+    const ok=!isNaN(tv)&&!isNaN(hv);
+    const sec=(Date.now()-new Date(last.created_at))/1000;
+    const online=ok&&sec<=OFFLINE;
 
     setSensor(online?'on':'off',
       online?'SENSOR ONLINE':
-        'SENSOR OFFLINE · '+(sec<60?Math.floor(sec)+'s':sec<3600?Math.floor(sec/60)+'min':Math.floor(sec/3600)+'h')+' no signal');
+        'OFFLINE · '+(sec<60?Math.floor(sec)+'s':sec<3600?Math.floor(sec/60)+'min':Math.floor(sec/3600)+'h')+' no signal');
 
     document.getElementById('lastUpd').textContent = fmtDT(last.created_at);
     document.getElementById('feedAge').textContent = ago(last.created_at);
 
-    const bd    = byDay(feeds);
-    const bdAll = byDayAllFeeds(feeds);
-
+    const bd=byDay(feeds), bdAll=byDayAllFeeds(feeds);
     if (ok) renderHero(tv, hv, bdAll);
     renderTiles(bd, bdAll);
     renderWeekTable(bd, bdAll);
@@ -1420,30 +1538,8 @@ async function fetchData() {
   }
 }
 
-/* ── CSV ── */
-function downloadCSV() {
-  if (!feeds.length) { alert('No data available.'); return; }
-  const bd = byDay(feeds);
-  let csv = 'Day,Avg Temp (C),Max Temp,Min Temp,Avg Hum (%),Max Hum,Min Hum,Records\n';
-  for (let d=1; d<=7; d++) {
-    const dt=bd[d];
-    if (!dt||!dt.t.length) { csv+=`"${DAYS_LONG[d-1]}","—","—","—","—","—","—","0"\n`; continue; }
-    const t=dt.t, h=dt.h;
-    csv+=`"${DAYS_LONG[d-1]}","${avg(t).toFixed(1)}","${Math.max(...t).toFixed(1)}","${Math.min(...t).toFixed(1)}","${avg(h).toFixed(1)}","${Math.max(...h).toFixed(1)}","${Math.min(...h).toFixed(1)}","${t.length}"\n`;
-  }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-  a.download='climalog_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
-}
+setInterval(()=>{ if(feeds.length) document.getElementById('feedAge').textContent=ago(feeds[feeds.length-1].created_at); }, 30000);
 
-/* ── LIVE AGO UPDATE ── */
-setInterval(()=>{
-  if (!feeds.length) return;
-  document.getElementById('feedAge').textContent = ago(feeds[feeds.length-1].created_at);
-}, 30000);
-
-/* ── INIT ── */
 fetchData();
 fetchPrevWeeks();
 setInterval(fetchData, TICK_MS);
