@@ -3,399 +3,1098 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CLIMALOG · Coastal Weather Station</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<title>CLIMALOG · Home Weather</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --ocean-deep:   #03111f;
-  --ocean-mid:    #051828;
-  --ocean-surf:   #072030;
-  --glass:        rgba(255,255,255,0.04);
-  --glass2:       rgba(255,255,255,0.08);
-  --glass3:       rgba(255,255,255,0.13);
-  --rim:          rgba(255,255,255,0.08);
-  --rim2:         rgba(255,255,255,0.16);
-  --sun:          #f7c85a;
-  --sun2:         #fbe08a;
-  --sun-glow:     rgba(247,200,90,0.08);
-  --aqua:         #00d4c8;
-  --aqua2:        #5eeee8;
-  --aqua-dim:     rgba(0,212,200,0.12);
-  --coral:        #ff7c5c;
-  --coral2:       #ffaa8a;
-  --coral-dim:    rgba(255,124,92,0.12);
-  --sky-lt:       #b8e4f8;
-  --sky-mid:      #5ab8e0;
-  --sky-dim:      rgba(90,184,224,0.1);
-  --text:         #dff0fa;
-  --text2:        #6898b8;
-  --text3:        #304858;
-  --green-ok:     #3ddba8;
-  --red-warn:     #ff5566;
-  --white:        rgba(255,255,255,0.92);
+  --bg:        #1c1a18;
+  --bg2:       #221f1c;
+  --bg3:       #282420;
+  --card:      #2a2622;
+  --card2:     #302c27;
+  --rim:       rgba(255,255,255,0.06);
+  --rim2:      rgba(255,255,255,0.12);
+  --rim3:      rgba(255,255,255,0.2);
+
+  --amber:     #e8a030;
+  --amber2:    #f0bc60;
+  --amber3:    #f8d490;
+  --amber-dim: rgba(232,160,48,0.12);
+  --amber-glow:rgba(232,160,48,0.06);
+
+  --rose:      #d4685a;
+  --rose2:     #e89080;
+  --rose-dim:  rgba(212,104,90,0.12);
+
+  --sage:      #6a9e7a;
+  --sage2:     #90c4a0;
+  --sage-dim:  rgba(106,158,122,0.12);
+
+  --blue:      #5a8ec8;
+  --blue2:     #8ab8e8;
+  --blue-dim:  rgba(90,142,200,0.12);
+
+  --cream:     #f0e8d8;
+  --cream2:    #d8ccb8;
+  --text:      #c8bea8;
+  --text2:     #7a6e5e;
+  --text3:     #4a4038;
+  --white:     rgba(240,232,216,0.92);
+
+  --green-ok:  #7abf8a;
+  --red-warn:  #d46868;
+
   --r:  8px;
-  --r2: 16px;
-  --r3: 24px;
+  --r2: 14px;
+  --r3: 20px;
 }
+
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{background:var(--ocean-deep);color:var(--text);font-family:'Outfit',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 120% 60% at 50% -5%,rgba(0,180,200,0.12) 0%,transparent 55%),radial-gradient(ellipse 80% 50% at 100% 30%,rgba(0,100,160,0.10) 0%,transparent 55%),radial-gradient(ellipse 60% 40% at 0% 70%,rgba(0,60,100,0.12) 0%,transparent 55%),radial-gradient(ellipse 100% 40% at 50% 100%,rgba(0,40,80,0.3) 0%,transparent 50%);}
-body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 600px 120px at 30% 5%,rgba(0,212,200,0.05) 0%,transparent 100%),radial-gradient(ellipse 400px 80px at 75% 12%,rgba(247,200,90,0.04) 0%,transparent 100%);}
-.page{position:relative;z-index:1;max-width:1340px;margin:0 auto;padding:0 28px 100px;}
 
-/* ── HERO HEADER ── */
-.hero-header{padding:52px 0 44px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:32px;position:relative;}
-.hero-header::after{content:'';position:absolute;bottom:0;left:-28px;right:-28px;height:1px;background:linear-gradient(90deg,transparent,var(--aqua-dim),rgba(255,255,255,0.06),var(--aqua-dim),transparent);}
-.hero-left{display:flex;flex-direction:column;gap:6px;}
-.hero-location{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:4px;color:var(--aqua);text-transform:uppercase;}
-.hero-coords{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text2);}
-.hero-center{text-align:center;}
-.wordmark{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(52px,7vw,88px);letter-spacing:16px;color:var(--white);line-height:1;}
-.wordmark em{font-style:italic;color:var(--aqua2);}
-.wordmark-sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:6px;color:var(--text2);text-transform:uppercase;margin-top:10px;}
-.sun-mark{width:48px;height:48px;margin:0 auto 12px;position:relative;display:flex;align-items:center;justify-content:center;}
-.sun-mark::before{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid rgba(247,200,90,0.3);animation:sun-spin 20s linear infinite;}
-.sun-mark::after{content:'';position:absolute;inset:8px;border-radius:50%;background:radial-gradient(circle,rgba(247,200,90,0.5) 0%,rgba(247,200,90,0.1) 60%,transparent 100%);animation:sun-pulse 3s ease-in-out infinite;}
-@keyframes sun-spin{to{transform:rotate(360deg);}}
-@keyframes sun-pulse{0%,100%{opacity:.6}50%{opacity:1}}
-.hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
-.hero-status-pill{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--rim2);border-radius:20px;padding:7px 16px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text);}
-.s-dot{width:7px;height:7px;border-radius:50%;}
-.s-on{background:var(--green-ok);box-shadow:0 0 8px var(--green-ok);animation:blink 2.5s ease-in-out infinite;}
-.s-off{background:var(--red-warn);}
-.s-wait{background:var(--sun);animation:blink 1s ease-in-out infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.hero-last-upd{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text3);}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-/* ── CONTROLS BAR ── */
-.controls-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--glass);border:1px solid var(--rim);border-radius:var(--r2);margin-bottom:32px;flex-wrap:wrap;gap:12px;}
-.ctrl-info{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text2);}
-.ctrl-info span{color:var(--text);}
-.controls-left{display:flex;align-items:center;gap:20px;}
-.controls-right{display:flex;align-items:center;gap:12px;}
-.unit-toggle{display:flex;background:rgba(0,0,0,0.3);border:1px solid var(--rim2);border-radius:20px;padding:3px;}
-.unit-btn{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;padding:6px 16px;border-radius:16px;border:none;cursor:pointer;background:transparent;color:var(--text2);transition:all .25s;}
-.unit-btn.active{background:linear-gradient(135deg,var(--aqua),var(--sky-mid));color:var(--ocean-deep);font-weight:500;}
-.refresh-btn{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;padding:9px 20px;border-radius:20px;border:1px solid var(--rim2);background:var(--glass);color:var(--text2);cursor:pointer;transition:all .2s;text-transform:uppercase;}
-.refresh-btn:hover{border-color:var(--aqua);color:var(--aqua2);}
+/* Warm hearth glow background */
+body::before {
+  content:'';
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%,   rgba(200,120,40,0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 60%,  rgba(180,100,30,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 50% at 90% 40%,  rgba(160,80,30,0.06)  0%, transparent 55%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(100,60,20,0.15)  0%, transparent 50%);
+}
 
-/* ── SHOWCASE GRID ── */
-.showcase{display:grid;grid-template-columns:280px 1fr 280px;gap:20px;margin-bottom:32px;}
-.metric-stack{display:flex;flex-direction:column;gap:14px;}
-.metric-card{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r2);padding:22px 22px 18px;position:relative;overflow:hidden;transition:border-color .3s,transform .2s;}
-.metric-card:hover{border-color:var(--rim2);transform:translateY(-1px);}
-.mc-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text2);margin-bottom:10px;}
-.mc-value{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:58px;line-height:.9;letter-spacing:-1px;transition:all .4s;}
-.mc-unit{font-family:'Outfit',sans-serif;font-size:16px;font-weight:300;opacity:.6;margin-left:2px;}
-.mc-track{height:2px;background:var(--rim);border-radius:1px;overflow:hidden;margin-top:14px;}
-.mc-fill{height:100%;border-radius:1px;transition:width 1.8s cubic-bezier(.16,1,.3,1);}
-.mc-range{display:flex;justify-content:space-between;margin-top:5px;font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:1px;}
+/* Subtle paper texture dots */
+body::after {
+  content:'';
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
 
-/* ── CENTER SHOWCASE ── */
-.center-showcase{background:var(--glass);border:1px solid var(--rim2);border-radius:var(--r3);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px 36px;position:relative;overflow:hidden;min-height:380px;}
-.center-showcase::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;border:1px solid rgba(0,212,200,0.06);top:50%;left:50%;transform:translate(-50%,-50%);animation:ripple 8s ease-in-out infinite;}
-.center-showcase::after{content:'';position:absolute;width:340px;height:340px;border-radius:50%;border:1px solid rgba(0,212,200,0.08);top:50%;left:50%;transform:translate(-50%,-50%);animation:ripple 8s ease-in-out infinite 2s;}
-@keyframes ripple{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.5}50%{transform:translate(-50%,-50%) scale(1.04);opacity:1}}
-.cs-eyebrow{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:5px;color:var(--aqua);text-transform:uppercase;margin-bottom:16px;position:relative;}
-.cs-eyebrow::before,.cs-eyebrow::after{content:'—';opacity:.4;margin:0 10px;}
-.cs-temp{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:140px;line-height:.85;letter-spacing:-4px;position:relative;transition:all .5s;}
-.cs-temp-unit{font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;opacity:.5;vertical-align:super;margin-left:4px;}
-.cs-feel{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;font-weight:300;color:var(--text2);margin-top:8px;position:relative;letter-spacing:1px;}
-.cs-stats{display:flex;align-items:center;margin-top:28px;background:rgba(0,0,0,0.25);border:1px solid var(--rim);border-radius:40px;padding:14px 32px;position:relative;}
-.cs-stat{text-align:center;padding:0 20px;}
-.cs-stat+.cs-stat{border-left:1px solid var(--rim2);}
-.cs-stat-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;line-height:1;}
-.cs-stat-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-top:4px;}
-.cs-clock{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--text2);margin-top:20px;position:relative;}
-.live-pill{position:absolute;top:20px;right:22px;display:flex;align-items:center;gap:7px;background:rgba(0,0,0,0.35);border:1px solid rgba(61,219,168,0.3);border-radius:20px;padding:6px 14px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--green-ok);text-transform:uppercase;}
+.page {
+  position:relative;z-index:1;
+  max-width:1280px;margin:0 auto;
+  padding:0 24px 80px;
+}
 
-/* ── FEEL BANNER ── */
-.feel-banner{background:linear-gradient(135deg,var(--aqua-dim),var(--sun-glow),var(--sky-dim));border:1px solid rgba(0,212,200,0.15);border-radius:var(--r2);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px;}
-.fb-phrase{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;font-weight:300;color:var(--white);letter-spacing:1px;}
-.fb-tags{display:flex;gap:8px;flex-wrap:wrap;}
-.fb-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;border-radius:20px;border:1px solid;}
-.fb-tag-aqua{color:var(--aqua2);border-color:rgba(0,212,200,0.3);background:var(--aqua-dim);}
-.fb-tag-sun{color:var(--sun2);border-color:rgba(247,200,90,0.3);background:var(--sun-glow);}
-.fb-tag-coral{color:var(--coral2);border-color:rgba(255,124,92,0.3);background:var(--coral-dim);}
+/* ══════════════════════════════
+   TOP HEADER — cozy home feel
+══════════════════════════════ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 24px;
+  border-bottom: 1px solid var(--rim);
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
 
-/* ── SECTION LABEL ── */
-.sec-label{display:flex;align-items:center;gap:16px;margin:36px 0 18px;}
-.sec-label-text{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;letter-spacing:4px;color:var(--white);}
-.sec-label-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(0,212,200,0.2),transparent);}
-.sec-label-chip{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--aqua);border:1px solid rgba(0,212,200,0.25);background:var(--aqua-dim);padding:4px 12px;border-radius:4px;text-transform:uppercase;}
+/* Home icon + brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.home-icon {
+  width: 44px; height: 44px;
+  background: var(--card2);
+  border: 1px solid var(--rim2);
+  border-radius: var(--r2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.home-icon::after {
+  content:'';
+  position:absolute;inset:0;
+  background: radial-gradient(circle at 40% 30%, rgba(232,160,48,0.15), transparent 70%);
+}
+.brand-text {}
+.brand-name {
+  font-family: 'Lora', serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--cream);
+  letter-spacing: 1px;
+}
+.brand-name em {
+  font-style: italic;
+  color: var(--amber2);
+}
+.brand-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-top: 3px;
+}
 
-/* ── WEEK CARD ── */
-.week-card{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r3);overflow:hidden;margin-bottom:20px;}
-.week-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid var(--rim);}
-.wch-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;letter-spacing:2px;color:var(--white);}
-.wch-meta{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;}
+.topbar-center {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text2);
+  text-align: center;
+}
+.topbar-center strong { color: var(--amber2); font-weight: 400; }
 
-/* ── DAY TILES ── */
-.day-tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;padding:20px;}
-.day-tile{background:rgba(0,0,0,0.25);border:1px solid var(--rim);border-radius:var(--r2);padding:16px 8px 14px;text-align:center;position:relative;overflow:hidden;transition:all .25s;}
-.day-tile.has-data{border-color:rgba(0,212,200,0.2);}
-.day-tile.is-today{background:linear-gradient(170deg,rgba(0,212,200,0.1),rgba(0,100,160,0.1));border-color:rgba(0,212,200,0.45);}
-.day-tile.is-today::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--aqua2),transparent);animation:shimmer 3s ease-in-out infinite;}
-@keyframes shimmer{0%,100%{opacity:.4}50%{opacity:1}}
-.day-tile.is-future{opacity:.25;}
-.day-tile:not(.is-future):hover{border-color:var(--rim2);transform:translateY(-2px);}
-.today-tag{position:absolute;top:0;left:50%;transform:translateX(-50%);background:var(--aqua);color:var(--ocean-deep);font-family:'DM Mono',monospace;font-size:7px;font-weight:500;letter-spacing:1px;padding:2px 10px;border-radius:0 0 6px 6px;}
-.tile-day{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:10px;}
-.is-today .tile-day{color:var(--aqua2);}
-.tile-temp{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:300;color:var(--sun2);line-height:1;}
-.tile-hum{font-family:'DM Mono',monospace;font-size:9px;color:var(--sky-mid);margin-top:5px;letter-spacing:1px;}
-.tile-empty{font-size:20px;color:var(--rim2);margin-top:10px;}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-/* ── DATA TABLE ── */
-.tbl-outer{overflow-x:auto;padding:0 20px 20px;}
-table{width:100%;border-collapse:separate;border-spacing:0 4px;}
-thead th{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--aqua);padding:10px 14px;border-bottom:1px solid rgba(0,212,200,0.15);text-align:left;background:transparent;white-space:nowrap;}
-thead th:first-child{padding-left:20px;}
-tbody tr td{background:rgba(255,255,255,0.025);padding:13px 14px;font-size:14px;color:var(--text);border-top:1px solid transparent;border-bottom:1px solid transparent;transition:all .2s;white-space:nowrap;}
-tbody tr td:first-child{border-left:1px solid transparent;border-radius:var(--r) 0 0 var(--r);padding-left:20px;font-weight:400;}
-tbody tr td:last-child{border-right:1px solid transparent;border-radius:0 var(--r) var(--r) 0;}
-tbody tr:hover td{background:rgba(0,212,200,0.05);border-color:rgba(0,212,200,0.12);}
-tbody tr.today-row td{background:rgba(0,212,200,0.07);border-top-color:rgba(0,212,200,0.15);border-bottom-color:rgba(0,212,200,0.15);}
-tbody tr.today-row td:first-child{border-left-color:rgba(0,212,200,0.15);}
-tbody tr.today-row td:last-child{border-right-color:rgba(0,212,200,0.15);}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.5px;border:1px solid;}
-.chip-sun{background:rgba(247,200,90,0.1);color:var(--sun2);border-color:rgba(247,200,90,0.2);}
-.chip-hot{background:rgba(255,124,92,0.1);color:var(--coral2);border-color:rgba(255,124,92,0.2);}
-.chip-cold{background:rgba(0,212,200,0.08);color:var(--aqua2);border-color:rgba(0,212,200,0.18);}
-.chip-sky{background:rgba(90,184,224,0.08);color:var(--sky-lt);border-color:rgba(90,184,224,0.18);}
-.chip-sky-dk{background:rgba(90,184,224,0.05);color:var(--sky-mid);border-color:rgba(90,184,224,0.12);}
-.c-muted{color:var(--text2);font-family:'DM Mono',monospace;font-size:12px;}
-.empty-td{text-align:center!important;padding:40px!important;color:var(--text3)!important;font-family:'DM Mono',monospace!important;font-size:10px!important;letter-spacing:3px;background:transparent!important;}
+/* Unit toggle */
+.unit-toggle {
+  display: flex;
+  background: var(--card);
+  border: 1px solid var(--rim2);
+  border-radius: 20px;
+  padding: 3px;
+}
+.unit-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 6px 16px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text2);
+  transition: all .2s;
+  letter-spacing: 1px;
+}
+.unit-btn.active {
+  background: var(--amber);
+  color: #1a1008;
+  font-weight: 500;
+}
 
-/* ── HISTORY ── */
-.hist-item{margin-bottom:8px;}
-.hist-toggle{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:var(--glass);border:1px solid var(--rim);border-radius:var(--r2);cursor:pointer;transition:all .2s;user-select:none;}
-.hist-toggle:hover{background:var(--glass2);border-color:var(--rim2);}
-.hist-toggle-open{border-radius:var(--r2) var(--r2) 0 0;}
-.htl{display:flex;align-items:center;gap:16px;}
-.ht-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;letter-spacing:2px;color:var(--white);}
-.ht-meta{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text2);}
-.ht-stats{font-family:'DM Mono',monospace;font-size:10px;color:var(--sun2);letter-spacing:1px;}
-.ht-arrow{color:var(--text2);font-size:12px;transition:transform .25s;}
-.hist-body{background:var(--glass);border:1px solid var(--rim);border-top:none;border-radius:0 0 var(--r2) var(--r2);overflow:hidden;}
-.load-all-bar{display:flex;align-items:center;gap:14px;padding:18px 24px;background:var(--glass);border:1px solid var(--rim);border-radius:var(--r2);cursor:pointer;transition:all .2s;user-select:none;}
-.load-all-bar:hover{background:var(--glass2);border-color:rgba(0,212,200,0.2);}
-.load-all-label{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;letter-spacing:3px;color:var(--text);}
+.refresh-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--rim2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .2s;
+  text-transform: uppercase;
+}
+.refresh-btn:hover { border-color: var(--amber); color: var(--amber2); }
 
-/* ── TEAM ── */
-.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
-.team-card{background:var(--glass);border:1px solid var(--rim);border-radius:var(--r2);padding:24px 22px;display:flex;align-items:center;gap:16px;transition:all .25s;}
-.team-card:hover{border-color:var(--rim2);background:var(--glass2);}
-.team-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,rgba(0,212,200,0.2),rgba(0,100,160,0.3));border:1px solid rgba(0,212,200,0.25);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;color:var(--aqua2);flex-shrink:0;}
-.team-name{font-size:15px;font-weight:400;color:var(--white);letter-spacing:.5px;}
-.team-role{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-top:4px;}
+/* Status dot */
+.status-dot-row {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 1px;
+}
+.sdot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.s-on  { background:var(--green-ok); box-shadow:0 0 6px var(--green-ok); animation:blink 2.5s ease-in-out infinite; }
+.s-off { background:var(--red-warn); }
+.s-wait{ background:var(--amber); animation:blink 1s ease-in-out infinite; }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
-/* ── BRAND FOOTER ── */
-.brand-footer{background:linear-gradient(135deg,var(--aqua-dim),var(--sky-dim),var(--sun-glow));border:1px solid rgba(0,212,200,0.12);border-radius:var(--r3);padding:36px 40px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:32px;margin:36px 0 0;}
-.bf-tagline{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;font-weight:300;color:var(--text);line-height:1.7;}
-.bf-tagline strong{font-style:normal;font-weight:600;color:var(--aqua2);}
-.bf-center{text-align:center;}
-.bf-wordmark{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;letter-spacing:8px;color:var(--white);}
-.bf-wordmark em{font-style:italic;color:var(--aqua2);}
-.bf-sub{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:4px;color:var(--text2);text-transform:uppercase;margin-top:6px;}
-.bf-links{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
-.bf-link{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--aqua);text-decoration:none;text-transform:uppercase;transition:color .2s;}
-.bf-link:hover{color:var(--aqua2);}
-.bf-powered{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--text3);margin-top:4px;text-transform:uppercase;}
+/* ══════════════════════════════
+   MAIN DASHBOARD GRID
+══════════════════════════════ */
+.dashboard {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
 
-/* ── SPINNER ── */
-.spin{display:inline-block;width:10px;height:10px;border:1.5px solid var(--rim2);border-top-color:var(--aqua);border-radius:50%;animation:rot .7s linear infinite;vertical-align:middle;margin-right:6px;}
+/* ── LEFT: big reading card ── */
+.reading-card {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r3);
+  padding: 32px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Warm candle glow top */
+.reading-card::before {
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:120px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(232,160,48,0.12) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+.rc-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rc-eyebrow::before {
+  content:'';
+  width:20px; height:1px;
+  background: var(--amber);
+  opacity: .5;
+}
+
+/* Temperature */
+.rc-temp-wrap { margin-bottom: 24px; }
+.rc-temp-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.rc-temp {
+  font-family: 'Lora', serif;
+  font-size: 88px;
+  font-weight: 400;
+  line-height: .9;
+  color: var(--amber3);
+  letter-spacing: -2px;
+  transition: all .4s;
+}
+.rc-temp-unit {
+  font-family: 'Lora', serif;
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--amber2);
+  opacity: .7;
+  margin-left: 2px;
+}
+
+/* Comfort phrase */
+.rc-comfort {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 24px;
+  line-height: 1.5;
+  padding-left: 4px;
+  border-left: 2px solid var(--amber-dim);
+  padding-left: 12px;
+}
+
+/* Humidity row */
+.rc-hum-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg3);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+.rc-hum-icon { font-size: 20px; }
+.rc-hum-val {
+  font-family: 'Lora', serif;
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--blue2);
+  letter-spacing: -1px;
+}
+.rc-hum-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+/* Min/Max row */
+.rc-minmax {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.rc-mm-cell {
+  background: var(--bg3);
+  border: 1px solid var(--rim);
+  border-radius: var(--r);
+  padding: 12px 14px;
+}
+.rc-mm-lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.rc-mm-val {
+  font-family: 'Lora', serif;
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -1px;
+}
+
+/* ── RIGHT: week overview grid ── */
+.right-panel { display: flex; flex-direction: column; gap: 16px; }
+
+/* Condition banner */
+.condition-banner {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cb-phrase {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--cream2);
+  letter-spacing: .3px;
+}
+.cb-tags { display: flex; gap: 7px; flex-wrap: wrap; }
+.cb-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.tag-amber { color: var(--amber2); border-color: rgba(232,160,48,0.3); background: var(--amber-glow); }
+.tag-rose  { color: var(--rose2);  border-color: rgba(212,104,90,0.3);  background: var(--rose-dim);  }
+.tag-sage  { color: var(--sage2);  border-color: rgba(106,158,122,0.3); background: var(--sage-dim);  }
+.tag-blue  { color: var(--blue2);  border-color: rgba(90,142,200,0.3);  background: var(--blue-dim);  }
+
+/* Day tiles */
+.tiles-card {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  overflow: hidden;
+}
+.tiles-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--rim);
+}
+.tc-title {
+  font-family: 'Lora', serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--cream);
+  letter-spacing: .5px;
+}
+.tc-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text2);
+  text-transform: uppercase;
+}
+
+.day-tiles {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 8px;
+  padding: 16px;
+}
+.day-tile {
+  background: var(--bg3);
+  border: 1px solid var(--rim);
+  border-radius: var(--r);
+  padding: 14px 6px 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all .2s;
+}
+.day-tile.has-data { border-color: rgba(232,160,48,0.2); }
+.day-tile.is-today {
+  background: var(--amber-dim);
+  border-color: rgba(232,160,48,0.5);
+}
+.day-tile.is-today::before {
+  content: 'Today';
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  background: var(--amber);
+  color: #1a0e00;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px; font-weight:500; letter-spacing:1px;
+  padding: 2px 8px;
+  border-radius: 0 0 6px 6px;
+}
+.day-tile.is-future { opacity: .3; }
+.day-tile:not(.is-future):hover { border-color: var(--rim2); transform: translateY(-2px); }
+
+.tile-day {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.is-today .tile-day { color: var(--amber2); }
+.tile-temp {
+  font-family: 'Lora', serif;
+  font-size: 28px; font-weight: 400;
+  color: var(--amber3);
+  line-height: 1;
+}
+.tile-hum {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--blue2);
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+.tile-empty { font-size: 18px; color: var(--rim2); margin-top: 8px; }
+
+/* ══════════════════════════════
+   SECTION LABEL
+══════════════════════════════ */
+.sec-label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 32px 0 16px;
+}
+.sec-label-icon {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  background: var(--amber);
+  opacity: .7;
+  flex-shrink: 0;
+}
+.sec-label-text {
+  font-family: 'Lora', serif;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--cream);
+  letter-spacing: 1px;
+}
+.sec-label-line {
+  flex:1; height:1px;
+  background: linear-gradient(90deg, rgba(232,160,48,0.2), transparent);
+}
+
+/* ══════════════════════════════
+   WEEKLY TABLE
+══════════════════════════════ */
+.week-table-card {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.wtc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--rim);
+}
+.wtc-title {
+  font-family: 'Lora', serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--cream);
+}
+.wtc-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text2);
+  text-transform: uppercase;
+}
+
+.tbl-outer { overflow-x: auto; }
+table { width:100%; border-collapse:separate; border-spacing:0 3px; padding: 8px 16px; display: table; }
+thead th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber);
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(232,160,48,0.15);
+  text-align: left; white-space: nowrap;
+  background: transparent;
+}
+thead th:first-child { padding-left: 8px; }
+
+tbody tr td {
+  background: var(--bg3);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text);
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  transition: all .2s; white-space: nowrap;
+}
+tbody tr td:first-child {
+  border-left: 1px solid transparent;
+  border-radius: var(--r) 0 0 var(--r);
+  padding-left: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+}
+tbody tr td:last-child {
+  border-right: 1px solid transparent;
+  border-radius: 0 var(--r) var(--r) 0;
+}
+tbody tr:hover td {
+  background: rgba(232,160,48,0.06);
+  border-color: rgba(232,160,48,0.12);
+}
+tbody tr.today-row td {
+  background: rgba(232,160,48,0.08);
+  border-top-color: rgba(232,160,48,0.2);
+  border-bottom-color: rgba(232,160,48,0.2);
+}
+tbody tr.today-row td:first-child { border-left-color: rgba(232,160,48,0.35); }
+tbody tr.today-row td:last-child  { border-right-color: rgba(232,160,48,0.2); }
+
+/* Chips */
+.chip {
+  display: inline-flex; align-items: center;
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.chip-amber { background:rgba(232,160,48,0.1); color:var(--amber3);  border-color:rgba(232,160,48,0.22); }
+.chip-hot   { background:rgba(212,104,90,0.1); color:var(--rose2);   border-color:rgba(212,104,90,0.22); }
+.chip-cool  { background:rgba(90,142,200,0.1); color:var(--blue2);   border-color:rgba(90,142,200,0.2);  }
+.chip-hum   { background:rgba(90,142,200,0.08);color:var(--blue2);   border-color:rgba(90,142,200,0.18); }
+.chip-hmx   { background:rgba(106,158,122,0.1);color:var(--sage2);   border-color:rgba(106,158,122,0.2); }
+.chip-hmn   { background:rgba(106,158,122,0.06);color:var(--sage);   border-color:rgba(106,158,122,0.14);}
+
+.c-muted { color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.empty-td {
+  text-align: center !important;
+  padding: 36px !important;
+  color: var(--text3) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 10px !important;
+  letter-spacing: 2px;
+  background: transparent !important;
+}
+
+/* ══════════════════════════════
+   PREV WEEKS ACCORDION
+══════════════════════════════ */
+.hist-item { margin-bottom: 8px; }
+.hist-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 22px;
+  background: var(--card); border: 1px solid var(--rim); border-radius: var(--r2);
+  cursor: pointer; transition: all .2s; user-select: none;
+}
+.hist-toggle:hover { background: var(--card2); border-color: var(--rim2); }
+.hist-toggle-open { border-radius: var(--r2) var(--r2) 0 0; }
+.htl { display:flex; align-items:center; gap:14px; }
+.ht-title { font-family:'Lora',serif; font-size:15px; font-weight:500; color:var(--cream); }
+.ht-meta  { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1px; color:var(--text2); }
+.ht-stats { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--amber2); letter-spacing:1px; }
+.ht-arrow { color:var(--text2); font-size:11px; transition:transform .25s; }
+.hist-body {
+  background: var(--card); border: 1px solid var(--rim); border-top: none;
+  border-radius: 0 0 var(--r2) var(--r2); overflow: hidden;
+}
+
+/* ══════════════════════════════
+   THINGSPEAK LIVE CHARTS
+══════════════════════════════ */
+.ts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.ts-card {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Top accent stripe */
+.ts-card::before {
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:2px;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.ts-card:hover::before { opacity: 1; }
+.ts-card-temp::before { background: linear-gradient(90deg, var(--amber), var(--rose)); }
+.ts-card-hum::before  { background: linear-gradient(90deg, var(--blue), var(--sage)); }
+
+.ts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--rim);
+}
+.ts-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ts-icon {
+  width: 32px; height: 32px;
+  border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.ts-icon-temp { background: var(--amber-dim); }
+.ts-icon-hum  { background: var(--blue-dim); }
+.ts-title {
+  font-family: 'Lora', serif;
+  font-size: 14px; font-weight: 500;
+  color: var(--cream);
+}
+.ts-subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 2px;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.ts-live-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 1px;
+  color: var(--green-ok);
+  background: rgba(122,191,138,0.1);
+  border: 1px solid rgba(122,191,138,0.25);
+  border-radius: 12px;
+  padding: 4px 12px;
+  text-transform: uppercase;
+}
+.ts-live-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--green-ok);
+  box-shadow: 0 0 5px var(--green-ok);
+  animation: blink 2s ease-in-out infinite;
+}
+.ts-open-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 1px;
+  color: var(--amber); text-decoration: none;
+  border: 1px solid rgba(232,160,48,0.25);
+  padding: 5px 12px; border-radius: var(--r);
+  transition: all .2s; text-transform: uppercase;
+  margin-left: 8px;
+}
+.ts-open-link:hover { background: var(--amber-dim); border-color: var(--amber); }
+
+/* Chart stats bar */
+.ts-stats-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--rim);
+}
+.ts-stat {
+  flex: 1;
+  padding: 10px 16px;
+  border-right: 1px solid var(--rim);
+  text-align: center;
+}
+.ts-stat:last-child { border-right: none; }
+.ts-stat-val {
+  font-family: 'Lora', serif;
+  font-size: 22px; font-weight: 400;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.ts-stat-lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 2px;
+  color: var(--text2);
+  text-transform: uppercase;
+}
+
+/* Iframe wrapper */
+.ts-embed {
+  padding: 14px 16px 16px;
+  background: #1e1a16;
+}
+.ts-embed iframe {
+  display: block; width: 100%; border: none;
+  border-radius: var(--r);
+}
+
+/* ══════════════════════════════
+   TEAM
+══════════════════════════════ */
+.team-row {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.team-card {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  padding: 20px 20px;
+  display: flex; align-items: center; gap: 14px;
+  transition: all .2s;
+}
+.team-card:hover { border-color: var(--rim2); background: var(--card2); }
+.team-av {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid rgba(232,160,48,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Lora', serif; font-size: 16px; font-weight: 500;
+  color: var(--amber2); flex-shrink: 0;
+}
+.team-name { font-size: 14px; font-weight: 500; color: var(--cream); }
+.team-role { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text2); margin-top: 3px; }
+
+/* ══════════════════════════════
+   HOME FOOTER
+══════════════════════════════ */
+.home-footer {
+  background: var(--card);
+  border: 1px solid var(--rim);
+  border-radius: var(--r2);
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+.hf-left {
+  display: flex; align-items: center; gap: 14px;
+}
+.hf-home-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--amber); opacity: .6;
+}
+.hf-tagline {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text2);
+}
+.hf-links {
+  display: flex; gap: 20px; align-items: center;
+}
+.hf-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--amber); text-decoration: none; transition: color .2s;
+}
+.hf-link:hover { color: var(--amber2); }
+.hf-copy {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 1px;
+  color: var(--text3); text-transform: uppercase;
+}
+
+/* ── spinner ── */
+.spin {
+  display:inline-block; width:10px; height:10px;
+  border:1.5px solid var(--rim2); border-top-color:var(--amber);
+  border-radius:50%; animation:rot .7s linear infinite;
+  vertical-align:middle; margin-right:6px;
+}
 @keyframes rot{to{transform:rotate(360deg);}}
 
-/* ── RESPONSIVE ── */
-@media(max-width:1000px){.showcase{grid-template-columns:1fr 1fr;}.metric-stack:last-child{display:none;}.cs-temp{font-size:100px;}.brand-footer{grid-template-columns:1fr;text-align:center;}.bf-links{align-items:center;}}
-@media(max-width:700px){.hero-header{grid-template-columns:1fr;text-align:center;}.hero-right{align-items:center;}.showcase{grid-template-columns:1fr;}.day-tiles{grid-template-columns:repeat(4,1fr);}.team-grid{grid-template-columns:1fr;}.cs-temp{font-size:80px;}}
+/* ── responsive ── */
+@media(max-width:900px){
+  .dashboard{grid-template-columns:1fr;}
+  .ts-grid{grid-template-columns:1fr;}
+  .team-row{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:600px){
+  .day-tiles{grid-template-columns:repeat(4,1fr);}
+  .team-row{grid-template-columns:1fr;}
+  .rc-temp{font-size:64px;}
+}
 
-/* ── Entry animations ── */
-.page>*{animation:enter .6s ease both;}
-.page>*:nth-child(1){animation-delay:.04s}.page>*:nth-child(2){animation-delay:.09s}.page>*:nth-child(3){animation-delay:.14s}.page>*:nth-child(4){animation-delay:.19s}.page>*:nth-child(5){animation-delay:.24s}.page>*:nth-child(6){animation-delay:.29s}
-@keyframes enter{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+/* ── entry animations ── */
+.page>*{animation:fadein .5s ease both;}
+.page>*:nth-child(1){animation-delay:.05s}
+.page>*:nth-child(2){animation-delay:.10s}
+.page>*:nth-child(3){animation-delay:.15s}
+.page>*:nth-child(4){animation-delay:.20s}
+.page>*:nth-child(5){animation-delay:.25s}
+@keyframes fadein{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
 </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- HERO HEADER -->
-  <header class="hero-header">
-    <div class="hero-left">
-      <div class="hero-location">Tijuana, Baja California</div>
-      <div class="hero-coords">32.5° N &nbsp;·&nbsp; 117.0° W &nbsp;·&nbsp; 20 m ASL</div>
-    </div>
-    <div class="hero-center">
-      <div class="sun-mark"></div>
-      <div class="wordmark">CLIMA<em>LOG</em></div>
-      <div class="wordmark-sub">Coastal Weather Station · ESP32 + DHT11</div>
-    </div>
-    <div class="hero-right">
-      <div class="hero-status-pill">
-        <div class="s-dot s-wait" id="sDot"></div>
-        <span id="sLabel" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px">CONNECTING</span>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="home-icon">🏠</div>
+      <div class="brand-text">
+        <div class="brand-name">Clima<em>log</em></div>
+        <div class="brand-sub">Home Weather · Tijuana, BC</div>
       </div>
-      <div class="hero-last-upd">Last: <span id="lastUpd">—</span> &nbsp;·&nbsp; <span id="feedAge">—</span></div>
     </div>
-  </header>
 
-  <!-- CONTROLS BAR -->
-  <div class="controls-bar">
-    <div class="controls-left">
-      <div class="ctrl-info">Station &nbsp;<span>TJX-01</span></div>
-      <div class="ctrl-info">Channel &nbsp;<span>3284038</span></div>
-      <div class="ctrl-info">Interval &nbsp;<span>5 min</span></div>
+    <div class="topbar-center">
+      <div id="topClock" style="font-size:13px;color:var(--cream2);margin-bottom:3px">—</div>
+      <div>ESP32 · DHT11 · <strong>Channel 3284038</strong></div>
     </div>
-    <div class="controls-right">
+
+    <div class="topbar-right">
+      <div class="status-dot-row">
+        <div class="sdot s-wait" id="sDot"></div>
+        <span id="sLabel" style="color:var(--text2)">Connecting</span>
+      </div>
       <div class="unit-toggle">
         <button class="unit-btn active" id="btnC" onclick="setUnit('C')">°C</button>
         <button class="unit-btn" id="btnF" onclick="setUnit('F')">°F</button>
       </div>
-      <button class="refresh-btn" onclick="fetchData()">↻ Refresh</button>
+      <button class="refresh-btn" onclick="fetchData()">↻</button>
     </div>
-  </div>
+  </header>
 
-  <!-- SHOWCASE -->
-  <div class="showcase">
-    <div class="metric-stack">
-      <div class="metric-card">
-        <div class="mc-label">Today · Max Temp</div>
-        <div class="mc-value" id="gMaxT" style="color:var(--sun2)">--<span class="mc-unit" id="gMaxTU">°C</span></div>
-        <div class="mc-track"><div class="mc-fill" id="bMaxT" style="width:0%;background:linear-gradient(90deg,var(--coral),var(--sun))"></div></div>
-        <div class="mc-range"><span>0°</span><span>50°</span></div>
-      </div>
-      <div class="metric-card">
-        <div class="mc-label">Today · Min Temp</div>
-        <div class="mc-value" id="gMinT" style="color:var(--aqua2)">--<span class="mc-unit" id="gMinTU">°C</span></div>
-        <div class="mc-track"><div class="mc-fill" id="bMinT" style="width:0%;background:linear-gradient(90deg,var(--aqua),var(--sky-mid))"></div></div>
-        <div class="mc-range"><span>0°</span><span>50°</span></div>
-      </div>
-    </div>
+  <!-- MAIN DASHBOARD -->
+  <div class="dashboard">
 
-    <div class="center-showcase">
-      <div class="live-pill" id="livePill" style="display:none">
-        <div class="s-dot s-on" style="width:6px;height:6px"></div>
-        Live
-      </div>
-      <div class="cs-eyebrow">Current Conditions</div>
-      <div class="cs-temp" id="csTemp" style="color:var(--sun2)">--<span class="cs-temp-unit" id="csTempU">°C</span></div>
-      <div class="cs-feel" id="csFeel">—</div>
-      <div class="cs-stats">
-        <div class="cs-stat">
-          <div class="cs-stat-val" id="csHum" style="color:var(--aqua2)">--%</div>
-          <div class="cs-stat-lbl">Humidity</div>
-        </div>
-        <div class="cs-stat">
-          <div class="cs-stat-val" id="csMaxH" style="color:var(--sky-lt)">--%</div>
-          <div class="cs-stat-lbl">Max Hum</div>
-        </div>
-        <div class="cs-stat">
-          <div class="cs-stat-val" id="csMinH" style="color:var(--sky-mid)">--%</div>
-          <div class="cs-stat-lbl">Min Hum</div>
+    <!-- Left: big reading -->
+    <div class="reading-card">
+      <div class="rc-eyebrow">Right now</div>
+
+      <div class="rc-temp-wrap">
+        <div class="rc-temp-label">Temperature</div>
+        <div class="rc-temp" id="rcTemp" style="color:var(--amber3)">
+          --<span class="rc-temp-unit" id="rcTempU">°C</span>
         </div>
       </div>
-      <div class="cs-clock" id="csClock">—</div>
+
+      <div class="rc-comfort" id="rcComfort">—</div>
+
+      <div class="rc-hum-row">
+        <div class="rc-hum-icon">💧</div>
+        <div>
+          <div class="rc-hum-val" id="rcHum">--%</div>
+          <div class="rc-hum-label">Humidity</div>
+        </div>
+      </div>
+
+      <div class="rc-minmax">
+        <div class="rc-mm-cell">
+          <div class="rc-mm-lbl">▲ Today max</div>
+          <div class="rc-mm-val" id="mmMaxT" style="color:var(--rose2)">--<span style="font-size:14px;opacity:.6" id="mmMaxTU">°C</span></div>
+        </div>
+        <div class="rc-mm-cell">
+          <div class="rc-mm-lbl">▼ Today min</div>
+          <div class="rc-mm-val" id="mmMinT" style="color:var(--blue2)">--<span style="font-size:14px;opacity:.6" id="mmMinTU">°C</span></div>
+        </div>
+      </div>
     </div>
 
-    <div class="metric-stack">
-      <div class="metric-card">
-        <div class="mc-label">Today · Max Humidity</div>
-        <div class="mc-value" id="gMaxH" style="color:var(--sky-lt)">--<span class="mc-unit">%</span></div>
-        <div class="mc-track"><div class="mc-fill" id="bMaxH" style="width:0%;background:linear-gradient(90deg,var(--sky-mid),var(--sky-lt))"></div></div>
-        <div class="mc-range"><span>0%</span><span>100%</span></div>
+    <!-- Right panel -->
+    <div class="right-panel">
+
+      <!-- Condition banner -->
+      <div class="condition-banner">
+        <div class="cb-phrase" id="cbPhrase">Checking conditions...</div>
+        <div class="cb-tags" id="cbTags"></div>
       </div>
-      <div class="metric-card">
-        <div class="mc-label">Today · Min Humidity</div>
-        <div class="mc-value" id="gMinH" style="color:var(--sky-mid)">--<span class="mc-unit">%</span></div>
-        <div class="mc-track"><div class="mc-fill" id="bMinH" style="width:0%;background:linear-gradient(90deg,var(--aqua),var(--sky-mid))"></div></div>
-        <div class="mc-range"><span>0%</span><span>100%</span></div>
+
+      <!-- Day tiles card -->
+      <div class="tiles-card">
+        <div class="tiles-card-head">
+          <div class="tc-title">This week — <span id="weekOf" style="color:var(--amber2)">—</span></div>
+          <div class="tc-meta" id="weekMeta">—</div>
+        </div>
+        <div class="day-tiles" id="tiles"></div>
       </div>
+
     </div>
-  </div>
+  </div><!-- /dashboard -->
 
-  <!-- FEEL BANNER -->
-  <div class="feel-banner" id="feelBanner">
-    <div class="fb-phrase" id="fbPhrase">Checking conditions...</div>
-    <div class="fb-tags" id="fbTags"></div>
-  </div>
-
-  <!-- CURRENT WEEK -->
+  <!-- WEEKLY TABLE -->
   <div class="sec-label">
-    <div class="sec-label-text">This Week</div>
+    <div class="sec-label-icon"></div>
+    <div class="sec-label-text">Weekly Summary</div>
     <div class="sec-label-line"></div>
-    <div class="sec-label-chip" id="weekChip">—</div>
   </div>
-  <div class="week-card">
-    <div class="week-card-head">
-      <div class="wch-title">Weekly Overview &mdash; <span id="weekOf">—</span></div>
-      <div class="wch-meta" id="weekMeta">—</div>
+  <div class="week-table-card">
+    <div class="wtc-head">
+      <div class="wtc-title">Daily averages</div>
+      <div class="wtc-meta" id="weekRangeMeta">—</div>
     </div>
-    <div class="day-tiles" id="tiles"></div>
-    <div class="tbl-outer">
+    <div class="tbl-outer" style="padding:8px 16px 16px">
       <table>
         <thead><tr>
           <th>Day</th>
           <th>Avg Temp</th><th>Max Temp</th><th>Min Temp</th>
           <th>Avg Hum</th><th>Max Hum</th><th>Min Hum</th>
         </tr></thead>
-        <tbody id="weekTb"><tr><td colspan="7" class="empty-td"><span class="spin"></span>Loading...</td></tr></tbody>
+        <tbody id="weekTb">
+          <tr><td colspan="7" class="empty-td"><span class="spin"></span>Loading...</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
 
-  <!-- PREVIOUS WEEKS -->
+  <!-- PREV WEEKS -->
   <div class="sec-label">
+    <div class="sec-label-icon"></div>
     <div class="sec-label-text">Previous Weeks</div>
     <div class="sec-label-line"></div>
   </div>
   <div id="prevWeeksWrap">
-    <div style="text-align:center;padding:28px;color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px"><span class="spin"></span>Loading previous weeks...</div>
+    <div style="text-align:center;padding:24px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px">
+      <span class="spin"></span>Loading...
+    </div>
   </div>
 
-  <!-- FULL HISTORY -->
+  <!-- THINGSPEAK LIVE -->
   <div class="sec-label">
-    <div class="sec-label-text">Full History</div>
+    <div class="sec-label-icon"></div>
+    <div class="sec-label-text">Live Charts</div>
     <div class="sec-label-line"></div>
   </div>
-  <div class="load-all-bar" onclick="toggleFullHistory()" style="margin-bottom:20px">
-    <span id="fhArrow" style="color:var(--aqua);font-size:14px;transition:transform .3s">▶</span>
-    <span class="load-all-label">Load all recorded data</span>
-    <span id="fhMeta" style="margin-left:auto;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)"></span>
+  <div class="ts-grid">
+
+    <!-- Temperature chart -->
+    <div class="ts-card ts-card-temp">
+      <div class="ts-head">
+        <div class="ts-head-left">
+          <div class="ts-icon ts-icon-temp">🌡️</div>
+          <div>
+            <div class="ts-title">Temperature</div>
+            <div class="ts-subtitle">Last 30 readings · 5 min interval</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="ts-live-badge"><div class="ts-live-dot"></div>Live</div>
+          <a class="ts-open-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
+        </div>
+      </div>
+      <div class="ts-stats-bar">
+        <div class="ts-stat">
+          <div class="ts-stat-val" id="tsMaxT" style="color:var(--rose2)">--</div>
+          <div class="ts-stat-lbl">Max today</div>
+        </div>
+        <div class="ts-stat">
+          <div class="ts-stat-val" id="tsAvgT" style="color:var(--amber2)">--</div>
+          <div class="ts-stat-lbl">Avg today</div>
+        </div>
+        <div class="ts-stat">
+          <div class="ts-stat-val" id="tsMinT" style="color:var(--blue2)">--</div>
+          <div class="ts-stat-lbl">Min today</div>
+        </div>
+      </div>
+      <div class="ts-embed">
+        <iframe height="200"
+          src="https://thingspeak.com/channels/3284038/charts/1?bgcolor=%231e1a16&color=%23e8a030&dynamic=true&results=30&type=line&update=15&title=Temperature&yaxislabel=°C&xaxislabel=Time">
+        </iframe>
+      </div>
+    </div>
+
+    <!-- Humidity chart -->
+    <div class="ts-card ts-card-hum">
+      <div class="ts-head">
+        <div class="ts-head-left">
+          <div class="ts-icon ts-icon-hum">💧</div>
+          <div>
+            <div class="ts-title">Humidity</div>
+            <div class="ts-subtitle">Last 30 readings · 5 min interval</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="ts-live-badge"><div class="ts-live-dot"></div>Live</div>
+          <a class="ts-open-link" href="https://thingspeak.com/channels/3284038" target="_blank">Open ↗</a>
+        </div>
+      </div>
+      <div class="ts-stats-bar">
+        <div class="ts-stat">
+          <div class="ts-stat-val" id="tsMaxH" style="color:var(--sage2)">--</div>
+          <div class="ts-stat-lbl">Max today</div>
+        </div>
+        <div class="ts-stat">
+          <div class="ts-stat-val" id="tsAvgH" style="color:var(--blue2)">--</div>
+          <div class="ts-stat-lbl">Avg today</div>
+        </div>
+        <div class="ts-stat">
+          <div class="ts-stat-val" id="tsMinH" style="color:var(--text2)">--</div>
+          <div class="ts-stat-lbl">Min today</div>
+        </div>
+      </div>
+      <div class="ts-embed">
+        <iframe height="200"
+          src="https://thingspeak.com/channels/3284038/charts/2?bgcolor=%231e1a16&color=%235a8ec8&dynamic=true&results=30&type=line&update=15&title=Humidity&yaxislabel=%25&xaxislabel=Time">
+        </iframe>
+      </div>
+    </div>
+
   </div>
-  <div id="fullHistWrap" style="display:none;margin-bottom:28px"></div>
 
   <!-- TEAM -->
   <div class="sec-label">
+    <div class="sec-label-icon"></div>
     <div class="sec-label-text">Project Team</div>
     <div class="sec-label-line"></div>
   </div>
-  <div class="team-grid">
+  <div class="team-row">
     <div class="team-card"><div class="team-av">MV</div><div><div class="team-name">Mauricio Vela</div><div class="team-role">Collaborator</div></div></div>
     <div class="team-card"><div class="team-av">CC</div><div><div class="team-name">Carlos Cayetano</div><div class="team-role">Collaborator</div></div></div>
     <div class="team-card"><div class="team-av">DL</div><div><div class="team-name">Daniel Lopez</div><div class="team-role">Collaborator</div></div></div>
   </div>
 
-  <!-- BRAND FOOTER -->
-  <div class="brand-footer">
-    <div class="bf-tagline">
-      <strong>Real-time environmental intelligence</strong><br>
-      for coastal properties, resorts &amp; smart buildings.<br>
-      <em>Powered by ESP32 · DHT11 · ThingSpeak.</em>
+  <!-- FOOTER -->
+  <div class="home-footer">
+    <div class="hf-left">
+      <div class="hf-home-dot"></div>
+      <div class="hf-tagline">Your home, always in the know.</div>
     </div>
-    <div class="bf-center">
-      <div class="bf-wordmark">CLIMA<em>LOG</em></div>
-      <div class="bf-sub">Environmental Monitoring System</div>
+    <div class="hf-links">
+      <a class="hf-link" href="https://thingspeak.com/channels/3284038" target="_blank">ThingSpeak ↗</a>
+      <a class="hf-link" href="https://pages.github.com" target="_blank">GitHub Pages ↗</a>
     </div>
-    <div class="bf-links">
-      <a class="bf-link" href="https://thingspeak.com/channels/3284038" target="_blank">ThingSpeak Channel ↗</a>
-      <a class="bf-link" href="https://pages.github.com" target="_blank">GitHub Pages ↗</a>
-      <div class="bf-powered">ESP32 · DHT11 · Tijuana BC · Mexico</div>
-    </div>
+    <div class="hf-copy">CLIMALOG · ESP32 + DHT11 · Tijuana BC</div>
   </div>
 
-</div>
+</div><!-- /page -->
 
 <script>
 const CH_ID="3284038",RD_KEY="IV68XDIEZ0KAVM7N",TZ="America/Tijuana",OFFLINE=5400,TICK_MS=300000;
@@ -426,41 +1125,45 @@ function tick(){
   const p=n=>String(n).padStart(2,'0');
   const h=d.getHours(),m=d.getMinutes(),s=d.getSeconds();
   const ampm=h>=12?'PM':'AM',h12=h%12||12;
-  document.getElementById('csClock').textContent=`${WJS[d.getDay()]}  ·  ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}  ·  ${h12}:${p(m)}:${p(s)} ${ampm}`;
+  document.getElementById('topClock').textContent=`${WJS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}  ·  ${h12}:${p(m)}:${p(s)} ${ampm}`;
 }
 tick();setInterval(tick,1000);
 
 const toLoc=s=>new Date(new Date(s).toLocaleString('en-US',{timeZone:TZ}));
 const p2=n=>String(n).padStart(2,'0');
-const fmtDT=s=>{const d=toLoc(s);return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;};
+const fmtDT=s=>{const d=toLoc(s);return`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;};
 const ago=s=>{const sec=Math.floor((Date.now()-new Date(s))/1000);if(sec<60)return sec+'s ago';if(sec<3600)return Math.floor(sec/60)+' min ago';return Math.floor(sec/3600)+'h '+Math.floor((sec%3600)/60)+'m ago';};
 const todayWD=()=>{const d=new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));return d.getDay()===0?7:d.getDay();};
 const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
 
 function setSensor(state,label){
-  document.getElementById('sDot').className='s-dot s-'+state;
+  document.getElementById('sDot').className='sdot s-'+state;
   const el=document.getElementById('sLabel');
   el.textContent=label;
   el.style.color=state==='on'?'var(--green-ok)':state==='off'?'var(--red-warn)':'var(--text2)';
-  document.getElementById('livePill').style.display=state==='on'?'flex':'none';
 }
 
+/* Comfort phrases */
 function getCondition(t){
-  if(t>=35)return{phrase:"Scorching hot — seek shade and stay hydrated.",tags:['Extreme Heat','UV Risk','Hydration Alert']};
-  if(t>=30)return{phrase:"A warm, sun-drenched afternoon on the Pacific coast.",tags:['Sunny','Warm','Beach Weather']};
-  if(t>=24)return{phrase:"Perfect coastal conditions — ideal for outdoor activities.",tags:['Pleasant','Clear Skies','Comfortable']};
-  if(t>=18)return{phrase:"Cool ocean breeze with mild temperatures.",tags:['Mild','Breezy','Comfortable']};
-  if(t>=12)return{phrase:"Refreshing and cool — bring a light jacket.",tags:['Cool','Fresh','Light Jacket']};
-  return{phrase:"A chilly coastal morning with crisp, clean air.",tags:['Cold','Crisp','Jacket Required']};
+  const d=toDisp(t);
+  if(d>=35)return{phrase:"It's very hot — stay hydrated and keep cool indoors.",tags:['Extreme Heat','Stay Indoors','Hydrate'],tc:['tag-rose','tag-rose','tag-amber']};
+  if(d>=30)return{phrase:"Warm and sunny outside — great for a morning walk.",tags:['Warm','Sunny','Light Clothing'],tc:['tag-amber','tag-amber','tag-sage']};
+  if(d>=24)return{phrase:"Pleasant weather — windows open, enjoy the breeze.",tags:['Comfortable','Open Windows','Great Outdoors'],tc:['tag-sage','tag-amber','tag-blue']};
+  if(d>=18)return{phrase:"Mild and fresh — a light jacket might be handy.",tags:['Mild','Fresh Air','Light Jacket'],tc:['tag-blue','tag-sage','tag-amber']};
+  if(d>=12)return{phrase:"Cool air today — time to make some coffee.",tags:['Cool','Cozy Indoors','Jacket'],tc:['tag-blue','tag-amber','tag-rose']};
+  return{phrase:"Cold outside — a perfect evening to stay in.",tags:['Cold','Stay Cozy','Bundle Up'],tc:['tag-blue','tag-rose','tag-amber']};
 }
 
 function renderFeel(t){
-  const cond=getCondition(toDisp(t));
-  document.getElementById('fbPhrase').textContent=cond.phrase;
-  document.getElementById('csFeel').textContent=cond.tags[0];
-  const wrap=document.getElementById('fbTags');wrap.innerHTML='';
-  const cls=['fb-tag-aqua','fb-tag-sun','fb-tag-coral'];
-  cond.tags.forEach((tag,i)=>{const s=document.createElement('span');s.className='fb-tag '+cls[i%cls.length];s.textContent=tag;wrap.appendChild(s);});
+  const c=getCondition(t);
+  document.getElementById('rcComfort').textContent=c.phrase;
+  document.getElementById('cbPhrase').textContent=c.phrase;
+  const wrap=document.getElementById('cbTags');wrap.innerHTML='';
+  c.tags.forEach((tag,i)=>{
+    const s=document.createElement('span');
+    s.className='cb-tag '+(c.tc[i]||'tag-amber');
+    s.textContent=tag;wrap.appendChild(s);
+  });
 }
 
 function weekRange(){
@@ -495,33 +1198,33 @@ function byDayAllFeeds(arr){
 }
 
 function renderHero(tv,hv,bdAll){
-  document.getElementById('csTemp').innerHTML=fmtT(tv)+`<span class="cs-temp-unit" id="csTempU">${uLbl()}</span>`;
-  document.getElementById('csHum').textContent=hv.toFixed(1)+'%';
+  document.getElementById('rcTemp').innerHTML=fmtT(tv)+`<span class="rc-temp-unit" id="rcTempU">${uLbl()}</span>`;
+  document.getElementById('rcHum').textContent=hv.toFixed(1)+'%';
   renderFeel(tv);
   const dh=todayWD(),dt=bdAll[dh];
   const tArr=dt&&dt.t.length?[...dt.t,tv]:[tv];
   const hArr=dt&&dt.h.length?[...dt.h,hv]:[hv];
   const maxT=Math.max(...tArr),minT=Math.min(...tArr),maxH=Math.max(...hArr),minH=Math.min(...hArr);
-  document.getElementById('gMaxT').innerHTML=fmtT(maxT)+`<span class="mc-unit" id="gMaxTU">${uLbl()}</span>`;
-  document.getElementById('gMinT').innerHTML=fmtT(minT)+`<span class="mc-unit" id="gMinTU">${uLbl()}</span>`;
-  document.getElementById('gMaxH').innerHTML=maxH.toFixed(1)+'<span class="mc-unit">%</span>';
-  document.getElementById('gMinH').innerHTML=minH.toFixed(1)+'<span class="mc-unit">%</span>';
-  document.getElementById('csMaxH').textContent=maxH.toFixed(1)+'%';
-  document.getElementById('csMinH').textContent=minH.toFixed(1)+'%';
-  document.getElementById('bMaxT').style.width=Math.min(100,maxT/50*100)+'%';
-  document.getElementById('bMinT').style.width=Math.min(100,minT/50*100)+'%';
-  document.getElementById('bMaxH').style.width=maxH+'%';
-  document.getElementById('bMinH').style.width=minH+'%';
+  document.getElementById('mmMaxT').innerHTML=fmtT(maxT)+`<span style="font-size:14px;opacity:.6" id="mmMaxTU">${uLbl()}</span>`;
+  document.getElementById('mmMinT').innerHTML=fmtT(minT)+`<span style="font-size:14px;opacity:.6" id="mmMinTU">${uLbl()}</span>`;
+  /* ThingSpeak stats panel */
+  document.getElementById('tsMaxT').textContent=fmtT(maxT)+uLbl();
+  document.getElementById('tsAvgT').textContent=fmtT(avg(tArr))+uLbl();
+  document.getElementById('tsMinT').textContent=fmtT(minT)+uLbl();
+  document.getElementById('tsMaxH').textContent=maxH.toFixed(1)+'%';
+  document.getElementById('tsAvgH').textContent=avg(hArr).toFixed(1)+'%';
+  document.getElementById('tsMinH').textContent=minH.toFixed(1)+'%';
 }
 
 function renderTiles(bd,bdAll){
-  const dh=todayWD(),now=new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
+  const dh=todayWD();
+  const now=new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
   const wd=now.getDay()||7,mon=new Date(now);mon.setDate(now.getDate()-wd+1);
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);
   document.getElementById('weekOf').textContent=p2(mon.getMonth()+1)+'/'+p2(mon.getDate())+'/'+mon.getFullYear();
   const meta=p2(mon.getDate())+' '+MONTHS[mon.getMonth()]+' — '+p2(sun.getDate())+' '+MONTHS[sun.getMonth()]+' '+sun.getFullYear();
   document.getElementById('weekMeta').textContent=meta;
-  document.getElementById('weekChip').textContent=meta;
+  document.getElementById('weekRangeMeta').textContent=meta;
   const wrap=document.getElementById('tiles');wrap.innerHTML='';
   for(let d=1;d<=7;d++){
     const isToday=d===dh,isFut=d>dh;
@@ -529,20 +1232,19 @@ function renderTiles(bd,bdAll){
     const maxTC=hasDat?Math.max(...src.t):null,maxH=hasDat?Math.max(...src.h).toFixed(1):null;
     const tile=document.createElement('div');
     tile.className='day-tile'+(hasDat?' has-data':'')+(isToday?' is-today':'')+(isFut?' is-future':'');
-    tile.innerHTML=(isToday?'<div class="today-tag">Today</div>':'')+
-      '<div class="tile-day">'+DAYS_SHORT[d-1]+'</div>'+
+    tile.innerHTML='<div class="tile-day">'+DAYS_SHORT[d-1]+'</div>'+
       (maxTC!==null?'<div class="tile-temp">'+fmtT(maxTC)+'°</div><div class="tile-hum">'+maxH+'%</div>':'<div class="tile-empty">'+(isFut?'···':'—')+'</div>');
     wrap.appendChild(tile);
   }
 }
 
 function buildChips(t,h){
-  return`<td><span class="chip chip-sun">${fmtT(avg(t))} ${uLbl()}</span></td>
+  return`<td><span class="chip chip-amber">${fmtT(avg(t))} ${uLbl()}</span></td>
   <td><span class="chip chip-hot">${fmtT(Math.max(...t))} ${uLbl()}</span></td>
-  <td><span class="chip chip-cold">${fmtT(Math.min(...t))} ${uLbl()}</span></td>
-  <td><span class="chip chip-cold">${avg(h).toFixed(1)}%</span></td>
-  <td><span class="chip chip-sky">${Math.max(...h).toFixed(1)}%</span></td>
-  <td><span class="chip chip-sky-dk">${Math.min(...h).toFixed(1)}%</span></td>`;
+  <td><span class="chip chip-cool">${fmtT(Math.min(...t))} ${uLbl()}</span></td>
+  <td><span class="chip chip-hum">${avg(h).toFixed(1)}%</span></td>
+  <td><span class="chip chip-hmx">${Math.max(...h).toFixed(1)}%</span></td>
+  <td><span class="chip chip-hmn">${Math.min(...h).toFixed(1)}%</span></td>`;
 }
 
 function renderWeekTable(bd,bdAll){
@@ -552,16 +1254,17 @@ function renderWeekTable(bd,bdAll){
     const tr=document.createElement('tr');
     if(isToday)tr.className='today-row';
     if(!dtLive||!dtLive.t||!dtLive.t.length){
-      tr.innerHTML=`<td>${DAYS_LONG[d-1]}${isToday?' <span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--aqua);letter-spacing:1px">NOW</span>':''}</td><td class="c-muted" colspan="6">${isFut?'Pending':'—'}</td>`;
+      tr.innerHTML=`<td>${DAYS_LONG[d-1]}${isToday?' <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--amber);letter-spacing:1px">now</span>':''}</td><td class="c-muted" colspan="6">${isFut?'—':'No data'}</td>`;
     }else{
       any=true;
-      tr.innerHTML=`<td>${DAYS_LONG[d-1]}${isToday?' <span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--aqua);letter-spacing:1px">NOW</span>':''}</td>${buildChips(dtLive.t,dtLive.h)}`;
+      tr.innerHTML=`<td>${DAYS_LONG[d-1]}${isToday?' <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--amber);letter-spacing:1px">now</span>':''}</td>${buildChips(dtLive.t,dtLive.h)}`;
     }
     tb.appendChild(tr);
   }
   if(!any)tb.innerHTML='<tr><td colspan="7" class="empty-td">No weekly data yet</td></tr>';
 }
 
+/* Prev weeks */
 function prevWeekRange(w){
   const now=new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));
   const wd=now.getDay()===0?7:now.getDay();
@@ -594,7 +1297,9 @@ function buildRows(bd){
 }
 
 function tblHtml(rows){
-  return`<div class="tbl-outer"><table><thead><tr><th>Day</th><th>Avg Temp</th><th>Max Temp</th><th>Min Temp</th><th>Avg Hum</th><th>Max Hum</th><th>Min Hum</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return`<div class="tbl-outer" style="padding:8px 16px 16px"><table>
+    <thead><tr><th>Day</th><th>Avg Temp</th><th>Max Temp</th><th>Min Temp</th><th>Avg Hum</th><th>Max Hum</th><th>Min Hum</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
 }
 
 async function fetchPrevWeeks(){
@@ -604,63 +1309,36 @@ async function fetchPrevWeeks(){
     try{
       const json=await fetch(`https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&start=${start}&end=${end}&results=8000`).then(r=>r.json());
       const wf=json.feeds||[];if(!wf.length)continue;anyData=true;
-      const card=document.createElement('div');card.className='week-card';card.style.marginBottom='12px';
-      card.innerHTML=`<div class="week-card-head"><div class="wch-title">Week of ${monStr}</div><div class="wch-meta">${label}</div></div>${tblHtml(buildRows(byDayPrev(wf)))}<div style="height:12px"></div>`;
-      wrap.appendChild(card);
+      const bd=byDayPrev(wf);
+      const allT=wf.map(f=>parseFloat(f.field1)).filter(v=>!isNaN(v));
+      const wAvg=allT.length?toDisp(avg(allT)).toFixed(1):'—',wMax=allT.length?toDisp(Math.max(...allT)).toFixed(1):'—',wMin=allT.length?toDisp(Math.min(...allT)).toFixed(1):'—';
+      const item=document.createElement('div');item.className='hist-item';
+      const bodyId=`pw-${w}`;
+      item.innerHTML=`<div class="hist-toggle" onclick="togglePW('${bodyId}',this)">
+        <div class="htl">
+          <span class="ht-title">Week of ${monStr}</span>
+          <span class="ht-meta">${label}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <span class="ht-stats">avg ${wAvg}${uLbl()} &nbsp;▲${wMax}° &nbsp;▼${wMin}°</span>
+          <span class="ht-arrow">▶</span>
+        </div>
+      </div>
+      <div id="${bodyId}" class="hist-body" style="display:none">${tblHtml(buildRows(bd))}<div style="height:10px"></div></div>`;
+      wrap.appendChild(item);
     }catch(e){console.warn(e);}
   }
-  if(!anyData)wrap.innerHTML='<div style="text-align:center;padding:28px;color:var(--text2);font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px">No previous week data found.</div>';
+  if(!anyData)wrap.innerHTML='<div style="text-align:center;padding:24px;color:var(--text2);font-family:\'JetBrains Mono\',monospace;font-size:10px;letter-spacing:2px">No previous week data found.</div>';
 }
 
-let fhLoaded=false,fhOpen=false;
-function toggleFullHistory(){
-  const wrap=document.getElementById('fullHistWrap'),arrow=document.getElementById('fhArrow');
-  fhOpen=!fhOpen;wrap.style.display=fhOpen?'block':'none';arrow.style.transform=fhOpen?'rotate(90deg)':'rotate(0deg)';
-  if(fhOpen&&!fhLoaded)fetchFullHistory();
-}
-
-function isoWeekKey(ds){
-  const d=toLoc(ds),tmp=new Date(d);tmp.setHours(0,0,0,0);tmp.setDate(tmp.getDate()+3-((tmp.getDay()+6)%7));
-  const w1=new Date(tmp.getFullYear(),0,4);
-  return`${tmp.getFullYear()}-W${String(1+Math.round(((tmp-w1)/86400000-3+((w1.getDay()+6)%7))/7)).padStart(2,'0')}`;
-}
-function getMonday(ds){const d=toLoc(ds),day=d.getDay()||7,mon=new Date(d);mon.setDate(d.getDate()-day+1);mon.setHours(0,0,0,0);return mon;}
-function weekLabel(mon){const sun=new Date(mon);sun.setDate(mon.getDate()+6);return`${p2(mon.getDate())} ${MONTHS[mon.getMonth()]} — ${p2(sun.getDate())} ${MONTHS[sun.getMonth()]} ${sun.getFullYear()}`;}
-function weekMonStr(mon){return`${p2(mon.getMonth()+1)}/${p2(mon.getDate())}/${mon.getFullYear()}`;}
-
-async function fetchFullHistory(){
-  const wrap=document.getElementById('fullHistWrap'),meta=document.getElementById('fhMeta');
-  wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--text2);font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px"><span class="spin"></span>Fetching all records...</div>';
-  try{
-    const json=await fetch(`https://api.thingspeak.com/channels/${CH_ID}/feeds.json?api_key=${RD_KEY}&results=8000`).then(r=>r.json());
-    const all=json.feeds||[];if(!all.length){wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">No data found.</div>';return;}
-    const wm={};
-    all.forEach(f=>{const k=isoWeekKey(f.created_at);if(!wm[k])wm[k]={feeds:[],monday:getMonday(f.created_at)};wm[k].feeds.push(f);});
-    const keys=Object.keys(wm).sort((a,b)=>b.localeCompare(a));
-    const hist=keys.filter(k=>k!==isoWeekKey(new Date().toISOString()));
-    meta.textContent=`${hist.length} week${hist.length!==1?'s':''} · ${all.length} entries`;
-    wrap.innerHTML='';fhLoaded=true;
-    hist.forEach((key,idx)=>{
-      const{feeds:wf,monday}=wm[key],bd=byDayPrev(wf),label=weekLabel(monday),monS=weekMonStr(monday);
-      const bodyId=`fhb-${idx}`;
-      const allT=wf.map(f=>parseFloat(f.field1)).filter(v=>!isNaN(v));
-      const wAvgT=allT.length?toDisp(avg(allT)).toFixed(1):'—',wMaxT=allT.length?toDisp(Math.max(...allT)).toFixed(1):'—',wMinT=allT.length?toDisp(Math.min(...allT)).toFixed(1):'—';
-      const item=document.createElement('div');item.className='hist-item';
-      item.innerHTML=`<div class="hist-toggle" onclick="toggleFHWeek('${bodyId}',this)"><div class="htl"><span class="ht-title">Week of ${monS}</span><span class="ht-meta">${label}</span></div><div style="display:flex;align-items:center;gap:16px"><span class="ht-stats">avg ${wAvgT}${uLbl()} &nbsp; ▲${wMaxT}° &nbsp; ▼${wMinT}°</span><span class="ht-arrow">▶</span></div></div><div id="${bodyId}" class="hist-body" style="display:none">${tblHtml(buildRows(bd))}<div style="height:12px"></div></div>`;
-      wrap.appendChild(item);
-    });
-    if(!hist.length)wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3);font-family:\'DM Mono\',monospace;font-size:10px">No previous weeks found yet.</div>';
-  }catch(e){console.error(e);wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--red-warn);font-family:\'DM Mono\',monospace;font-size:10px">Error loading history.</div>';}
-}
-
-function toggleFHWeek(id,hdr){
+function togglePW(id,hdr){
   const body=document.getElementById(id),arrow=hdr.querySelector('.ht-arrow'),open=body.style.display==='none';
   body.style.display=open?'block':'none';arrow.style.transform=open?'rotate(90deg)':'rotate(0deg)';
   hdr.classList.toggle('hist-toggle-open',open);
 }
 
 async function fetchData(){
-  setSensor('wait','CONNECTING');
+  setSensor('wait','Connecting...');
   try{
     const{start,end}=weekRange();
     const[jW,jL]=await Promise.all([
@@ -669,19 +1347,17 @@ async function fetchData(){
     ]);
     const seen=new Set();
     feeds=[...(jW.feeds||[]),...(jL.feeds||[])].filter(f=>{if(seen.has(f.entry_id))return false;seen.add(f.entry_id);return true;}).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-    if(!feeds.length){setSensor('off','NO DATA');return;}
+    if(!feeds.length){setSensor('off','No data');return;}
     const last=feeds[feeds.length-1],tv=parseFloat(last.field1),hv=parseFloat(last.field2);
     const ok=!isNaN(tv)&&!isNaN(hv),sec=(Date.now()-new Date(last.created_at))/1000,online=ok&&sec<=OFFLINE;
-    setSensor(online?'on':'off',online?'SENSOR ONLINE':'OFFLINE · '+(sec<60?Math.floor(sec)+'s':sec<3600?Math.floor(sec/60)+'min':Math.floor(sec/3600)+'h')+' no signal');
-    document.getElementById('lastUpd').textContent=fmtDT(last.created_at);
-    document.getElementById('feedAge').textContent=ago(last.created_at);
+    setSensor(online?'on':'off',online?'Sensor online':'Offline · '+(sec<60?Math.floor(sec)+'s':sec<3600?Math.floor(sec/60)+'min':Math.floor(sec/3600)+'h')+' ago');
     const bd=byDay(feeds),bdAll=byDayAllFeeds(feeds);
     if(ok)renderHero(tv,hv,bdAll);
     renderTiles(bd,bdAll);renderWeekTable(bd,bdAll);
-  }catch(e){console.error(e);setSensor('off','CONNECTION ERROR');}
+  }catch(e){console.error(e);setSensor('off','Connection error');}
 }
 
-setInterval(()=>{if(feeds.length)document.getElementById('feedAge').textContent=ago(feeds[feeds.length-1].created_at);},30000);
+setInterval(()=>{if(feeds.length)document.getElementById('sLabel').textContent=feeds.length?' Sensor online · '+ago(feeds[feeds.length-1].created_at):'';},30000);
 fetchData();fetchPrevWeeks();setInterval(fetchData,TICK_MS);
 </script>
 </body>
